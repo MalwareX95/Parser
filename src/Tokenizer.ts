@@ -14,7 +14,31 @@ export type Token =
     | NumberToken 
     | StringToken;
 
-export type TokenType = PropType<Token, 'type'>;
+export type TokenType = PropType<Token, 'type'> | null;
+
+const Spec: [RegExp, TokenType?][] = [
+  //-----------------------------
+  // Whitespace:
+  [ /^\s+/],
+
+  //-----------------------------
+  // Comments:
+
+  // Skip single-line comments:
+  [/^\/\/.*/],
+
+  // Skip multi-line comments:
+  [/^\/\*[\s\S]*?\*\//],
+
+  //-----------------------------
+  // Numbers: 
+  [ /^\d+/, 'Number' ],
+
+  //-----------------------------
+  // Strings:
+  [ /^"[^"]*"/, 'String' ],
+  [ /^'[^']*'/, 'String' ]
+];
 
 export class Tokenizer {
     str = '';
@@ -37,39 +61,40 @@ export class Tokenizer {
             return null;
         }
 
-        /**
-         * Numbers 
-         */
-        if(!Number.isNaN(Number(this.str[this.cursor]))){
-            let number = '';
+        const string = this.str.slice(this.cursor);
 
-            while(!Number.isNaN(Number(this.str[this.cursor]))) {
-                number += this.str[this.cursor++];
+        for (const [ regex, tokenType ] of Spec) {
+            const tokenValue = this.match(regex, string);
+
+            // Couldn't match this rule, continue.
+            if(tokenValue == null) {
+                continue;
+            }
+
+            // Should skip token, e.g whitespace.
+            if(tokenType == null) {
+                return this.getNextToken();
             }
 
             return {
-                type: 'Number',
-                value: number,
+                type: tokenType,
+                value: tokenValue,
             }
         }
 
-        /**
-         * String
-         */
-        if(this.str[this.cursor] === '"') {
-            let s = '';
-            do {
-                s += this.str[this.cursor++];
-            } while(this.str[this.cursor] !== '"' && !this.isEOF());
-            s+= this.str[this.cursor++]; // skip
+        throw new SyntaxError(`Unexpected token: "${string[0]}"`);
+    }
 
-            return {
-                type: 'String',
-                value: s,
-            }
+    /**
+     * Matches a token for regular expression 
+     */
+    match(regex: RegExp, str: string): string | null {
+        const matched = regex.exec(str);
+        if(!matched){
+            return null;
         }
-
-
-        return null;
+        
+        this.cursor += matched[0].length;
+        return matched[0];
     }
 }

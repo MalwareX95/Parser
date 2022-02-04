@@ -1,6 +1,24 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Tokenizer = void 0;
+const Spec = [
+    //-----------------------------
+    // Whitespace:
+    [/^\s+/],
+    //-----------------------------
+    // Comments:
+    // Skip single-line comments:
+    [/^\/\/.*/],
+    // Skip multi-line comments:
+    [/^\/\*[\s\S]*?\*\//],
+    //-----------------------------
+    // Numbers: 
+    [/^\d+/, 'Number'],
+    //-----------------------------
+    // Strings:
+    [/^"[^"]*"/, 'String'],
+    [/^'[^']*'/, 'String']
+];
 class Tokenizer {
     constructor() {
         this.str = '';
@@ -19,34 +37,34 @@ class Tokenizer {
         if (!this.hasMoreTokens()) {
             return null;
         }
-        /**
-         * Numbers
-         */
-        if (!Number.isNaN(Number(this.str[this.cursor]))) {
-            let number = '';
-            while (!Number.isNaN(Number(this.str[this.cursor]))) {
-                number += this.str[this.cursor++];
+        const string = this.str.slice(this.cursor);
+        for (const [regex, tokenType] of Spec) {
+            const tokenValue = this.match(regex, string);
+            // Couldn't match this rule, continue.
+            if (tokenValue == null) {
+                continue;
+            }
+            // Should skip token, e.g whitespace.
+            if (tokenType == null) {
+                return this.getNextToken();
             }
             return {
-                type: 'Number',
-                value: number,
+                type: tokenType,
+                value: tokenValue,
             };
         }
-        /**
-         * String
-         */
-        if (this.str[this.cursor] === '"') {
-            let s = '';
-            do {
-                s += this.str[this.cursor++];
-            } while (this.str[this.cursor] !== '"' && !this.isEOF());
-            s += this.str[this.cursor++]; // skip
-            return {
-                type: 'String',
-                value: s,
-            };
+        throw new SyntaxError(`Unexpected token: "${string[0]}"`);
+    }
+    /**
+     * Matches a token for regular expression
+     */
+    match(regex, str) {
+        const matched = regex.exec(str);
+        if (!matched) {
+            return null;
         }
-        return null;
+        this.cursor += matched[0].length;
+        return matched[0];
     }
 }
 exports.Tokenizer = Tokenizer;
