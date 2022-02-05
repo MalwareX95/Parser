@@ -1,17 +1,40 @@
-import { Parser } from "../src/Parser";
+import { Parser, Program } from "../src/Parser";
+import assert from 'assert'
+import literalTests from './literals-test'
+import statementListTest from "./statement-list-test";
+
+const tests = [
+    literalTests,
+    statementListTest
+];
 
 const parser = new Parser();
 
-const program = `
-    /*
-     * Documentation comment
-     */
-    42;
-`;
-
 /**
- * 
+ * For manual tests.
  */
-const ast = parser.parse(program);
+function exec() {
+    const program = `
+        /*
+         * Documentation comment
+         */
+        "hello";
 
-console.log(JSON.stringify(ast, null, 2));
+        //Number:
+        42;
+    `;
+
+    const ast = parser.parse(program);
+    console.log(JSON.stringify(ast, null, 2));
+}
+
+// exec()
+
+function test(program: string, expected: Program) {
+   const ast = parser.parse(program);
+   assert.deepEqual(ast, expected); 
+}
+
+tests.forEach(testRun => testRun(test))
+
+console.log('All assertions passed!')

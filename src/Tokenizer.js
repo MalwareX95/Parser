@@ -12,6 +12,9 @@ const Spec = [
     // Skip multi-line comments:
     [/^\/\*[\s\S]*?\*\//],
     //-----------------------------
+    // Symbols, delimiter
+    [/^;/, ';'],
+    //-----------------------------
     // Numbers: 
     [/^\d+/, 'Number'],
     //-----------------------------
@@ -26,6 +29,7 @@ class Tokenizer {
     }
     init(str) {
         this.str = str;
+        this.cursor = 0;
     }
     isEOF() {
         return this.cursor === this.str.length;

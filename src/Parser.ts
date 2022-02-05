@@ -14,9 +14,20 @@ type Literal =
     | NumericLiteral
     | StringLiteral
 
-type Program = {
+type Expression = Literal
+
+type ExpressionStatement = {
+    type: 'ExpressionStatement',
+    expression: Expression
+}
+
+type Statement = ExpressionStatement
+
+type StatementList = Statement[]
+
+export type Program = {
     type: 'Program';
-    body: Literal;
+    body: StatementList;
 }
 
 export class Parser {
@@ -48,10 +59,58 @@ export class Parser {
     Program(): Program {
         return {
             type: 'Program',
-            body: this.Literal(),
+            body: this.StatementList(),
         }
     }
 
+    /**
+     * StatementList
+     * : Statement
+     * | StatementList Statement -> Statement Statement Statement Statement
+     * ;
+     */
+    StatementList(): StatementList {
+        const statementList: StatementList = [ this.Statement() ]
+        
+        while(this.lookahead) {
+            statementList.push(this.Statement())
+        }
+
+        return statementList;
+    }
+
+    /**
+     * Statement
+     * : ExpressionStatement
+     * ;
+     */
+    Statement(): Statement {
+        return this.ExpressionStatement();
+    }
+
+    /**
+     * ExpressionStatement
+     * : Expression ';'
+     * ;
+     */
+    ExpressionStatement(): ExpressionStatement {
+        const expression = this.Expression();
+        this.eat(';');
+        
+        return {
+            type: 'ExpressionStatement',
+            expression
+        }
+    }
+
+    /**
+     * Expression
+     * : Literal
+     * ;
+     */
+    Expression(): Expression {
+        return this.Literal();
+    }
 
     Literal(): Literal {
         switch(this.lookahead?.type) {

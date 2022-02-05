@@ -8,13 +8,19 @@ type StringToken = {
     value: string;
 }
 
+type SemicolonToken = {
+    type: ';';
+    value: string;
+}
+
 type PropType<T, K extends keyof T> = T[K];
 
 export type Token = 
     | NumberToken 
-    | StringToken;
+    | StringToken
+    | SemicolonToken;
 
-export type TokenType = PropType<Token, 'type'> | null;
+export type TokenType = PropType<Token, 'type'>;
 
 const Spec: [RegExp, TokenType?][] = [
   //-----------------------------
@@ -31,6 +37,10 @@ const Spec: [RegExp, TokenType?][] = [
   [/^\/\*[\s\S]*?\*\//],
 
   //-----------------------------
+  // Symbols, delimiter
+  [/^;/, ';'],
+
+  //-----------------------------
   // Numbers: 
   [ /^\d+/, 'Number' ],
 
@@ -45,7 +55,8 @@ export class Tokenizer {
     cursor = 0;
 
     init(str: string) {
-        this.str = str;   
+        this.str = str;
+        this.cursor = 0;   
     }
 
     isEOF() {
