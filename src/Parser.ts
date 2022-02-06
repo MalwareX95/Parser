@@ -17,11 +17,23 @@ type Literal =
 type Expression = Literal
 
 type ExpressionStatement = {
-    type: 'ExpressionStatement',
-    expression: Expression
+    type: 'ExpressionStatement';
+    expression: Expression;
 }
 
-type Statement = ExpressionStatement
+type BlockStatement = {
+   type: 'BlockStatement';
+   body: StatementList; 
+}
+
+type EmptyStatement = {
+    type: 'EmptyStatement';
+}
+
+type Statement = 
+    | ExpressionStatement
+    | BlockStatement
+    | EmptyStatement
 
 type StatementList = Statement[]
 
@@ -53,7 +65,7 @@ export class Parser {
      * Main entry point.
      * 
      * Program
-     * : NumericLiteral
+     * : StatementList
      * ;
      */
     Program(): Program {
@@ -69,10 +81,10 @@ export class Parser {
      * | StatementList Statement -> Statement Statement Statement Statement
      * ;
      */
-    StatementList(): StatementList {
+    StatementList(stopLookaheadType?: TokenType): StatementList {
         const statementList: StatementList = [ this.Statement() ]
         
-        while(this.lookahead) {
+        while(this.lookahead && this.lookahead.type !== stopLookaheadType) {
             statementList.push(this.Statement())
         }
 
@@ -82,10 +94,46 @@ export class Parser {
     /**
      * Statement
      * : ExpressionStatement
+     * | BlockStatement
      * ;
      */
     Statement(): Statement {
-        return this.ExpressionStatement();
+        switch(this.lookahead?.type) {
+            case ';': 
+                return this.EmptyStatement();
+            case '{':
+                return this.BlockStatement();
+            default: 
+                return this.ExpressionStatement();
+        }
+    }
+
+    /**
+     * EmptyStatement
+     * : ';'
+     * ;
+     */
+    EmptyStatement(): EmptyStatement {
+        this.eat(';');
+        return {
+            type: 'EmptyStatement',
+        }
+    }
+
+    /**
+     * BlockStatement
+     * : '{' OptStatementList '}'
+     * ;
+     */
+    BlockStatement(): BlockStatement {
+        this.eat('{');
+        const body = this.lookahead?.type !== '}' ? this.StatementList('}') : [];
+        this.eat('}');
+
+        return {
+            type: 'BlockStatement',
+            body
+        };
     }
 
     /**

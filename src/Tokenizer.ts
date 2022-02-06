@@ -13,12 +13,24 @@ type SemicolonToken = {
     value: string;
 }
 
+type OpenCurlyBrace = {
+    type: '{';
+    value: string;
+}
+
+type CloseCurlyBrace = {
+    type: '}';
+    value: string;
+}
+
 type PropType<T, K extends keyof T> = T[K];
 
 export type Token = 
     | NumberToken 
     | StringToken
-    | SemicolonToken;
+    | SemicolonToken
+    | OpenCurlyBrace
+    | CloseCurlyBrace;
 
 export type TokenType = PropType<Token, 'type'>;
 
@@ -39,6 +51,8 @@ const Spec: [RegExp, TokenType?][] = [
   //-----------------------------
   // Symbols, delimiter
   [/^;/, ';'],
+  [/^{/, '{'],
+  [/^}/, '}'],
 
   //-----------------------------
   // Numbers: 

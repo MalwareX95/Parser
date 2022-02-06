@@ -2,10 +2,14 @@ import { Parser, Program } from "../src/Parser";
 import assert from 'assert'
 import literalTests from './literals-test'
 import statementListTest from "./statement-list-test";
+import blockTest from "./block-test";
+import emptyStatementTest from "./empty-statement-test";
 
 const tests = [
     literalTests,
-    statementListTest
+    statementListTest,
+    blockTest,
+    emptyStatementTest,
 ];
 
 const parser = new Parser();

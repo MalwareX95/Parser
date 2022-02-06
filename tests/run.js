@@ -7,9 +7,13 @@ const Parser_1 = require("../src/Parser");
 const assert_1 = __importDefault(require("assert"));
 const literals_test_1 = __importDefault(require("./literals-test"));
 const statement_list_test_1 = __importDefault(require("./statement-list-test"));
+const block_test_1 = __importDefault(require("./block-test"));
+const empty_statement_test_1 = __importDefault(require("./empty-statement-test"));
 const tests = [
     literals_test_1.default,
-    statement_list_test_1.default
+    statement_list_test_1.default,
+    block_test_1.default,
+    empty_statement_test_1.default,
 ];
 const parser = new Parser_1.Parser();
 /**

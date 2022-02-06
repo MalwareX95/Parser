@@ -22,7 +22,7 @@ class Parser {
      * Main entry point.
      *
      * Program
-     * : NumericLiteral
+     * : StatementList
      * ;
      */
     Program() {
@@ -37,9 +37,9 @@ class Parser {
      * | StatementList Statement -> Statement Statement Statement Statement
      * ;
      */
-    StatementList() {
+    StatementList(stopLookaheadType) {
         const statementList = [this.Statement()];
-        while (this.lookahead) {
+        while (this.lookahead && this.lookahead.type !== stopLookaheadType) {
             statementList.push(this.Statement());
         }
         return statementList;
@@ -47,10 +47,45 @@ class Parser {
     /**
      * Statement
      * : ExpressionStatement
+     * | BlockStatement
      * ;
      */
     Statement() {
-        return this.ExpressionStatement();
+        var _a;
+        switch ((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) {
+            case ';':
+                return this.EmptyStatement();
+            case '{':
+                return this.BlockStatement();
+            default:
+                return this.ExpressionStatement();
+        }
+    }
+    /**
+     * EmptyStatement
+     * : ';'
+     * ;
+     */
+    EmptyStatement() {
+        this.eat(';');
+        return {
+            type: 'EmptyStatement',
+        };
+    }
+    /**
+     * BlockStatement
+     * : '{' OptStatementList '}'
+     * ;
+     */
+    BlockStatement() {
+        var _a;
+        this.eat('{');
+        const body = ((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) !== '}' ? this.StatementList('}') : [];
+        this.eat('}');
+        return {
+            type: 'BlockStatement',
+            body
+        };
     }
     /**
      * ExpressionStatement
