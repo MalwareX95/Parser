@@ -42,6 +42,83 @@ export type Program = {
     body: StatementList;
 }
 
+//----------------------------------
+// Default AST node factories
+
+const DefaultFactory = {
+    Program(body: any): Program {
+        return {
+            type: 'Program',
+            body
+        }
+    },
+
+    EmptyStatement(): EmptyStatement {
+        return {
+            type: 'EmptyStatement',
+        }
+    },
+
+    BlockStatement(body: any): BlockStatement {
+        return {
+            type: 'BlockStatement',
+            body
+        };
+    },
+
+    ExpressionStatement(expression: any): ExpressionStatement {
+        return {
+            type: 'ExpressionStatement',
+            expression
+        }
+    },
+
+    StringLiteral(value: string): StringLiteral {
+        return {
+            type: 'StringLiteral',
+            value
+        }
+    },
+
+    NumericLiteral(value: number): NumericLiteral {
+        return {
+            type: 'NumericLiteral',
+            value,
+        }
+    }
+}
+
+//----------------------------------
+// S-expression AST node factories 
+
+const SExpressionFactory = {
+    Program(body: any) {
+        return ['begin', body];
+    },
+
+    EmptyStatement() {},
+
+    BlockStatement(body: any) {
+        return ['begin', body]
+    },
+
+    ExpressionStatement(expression: any) {
+        return expression;
+    },
+
+    StringLiteral(value: string) {
+        return `"${value}"`;
+    },
+
+    NumericLiteral(value: number){
+        return value;
+    }
+}
+
+const AST_MODE: string = 's-expression';
+
+const factory = AST_MODE === 'default' ? DefaultFactory : SExpressionFactory;
+
 export class Parser {
     str = '';
 
@@ -49,7 +126,7 @@ export class Parser {
 
     lookahead?: Token | null;
 
-    parse(str: string): Program {
+    parse(str: string) {
         this.str = str;
         this.tokenizer.init(str);
         /**
@@ -68,11 +145,8 @@ export class Parser {
      * : StatementList
      * ;
      */
-    Program(): Program {
-        return {
-            type: 'Program',
-            body: this.StatementList(),
-        }
+    Program() {
+        return factory.Program(this.StatementList());
     }
 
     /**
@@ -81,8 +155,8 @@ export class Parser {
      * | StatementList Statement -> Statement Statement Statement Statement
      * ;
      */
-    StatementList(stopLookaheadType?: TokenType): StatementList {
-        const statementList: StatementList = [ this.Statement() ]
+    StatementList(stopLookaheadType?: TokenType) {
+        const statementList = [ this.Statement() ]
         
         while(this.lookahead && this.lookahead.type !== stopLookaheadType) {
             statementList.push(this.Statement())
@@ -97,7 +171,7 @@ export class Parser {
      * | BlockStatement
      * ;
      */
-    Statement(): Statement {
+    Statement() {
         switch(this.lookahead?.type) {
             case ';': 
                 return this.EmptyStatement();
@@ -113,11 +187,9 @@ export class Parser {
      * : ';'
      * ;
      */
-    EmptyStatement(): EmptyStatement {
+    EmptyStatement() {
         this.eat(';');
-        return {
-            type: 'EmptyStatement',
-        }
+        return factory.EmptyStatement();
     }
 
     /**
@@ -125,15 +197,11 @@ export class Parser {
      * : '{' OptStatementList '}'
      * ;
      */
-    BlockStatement(): BlockStatement {
+    BlockStatement() {
         this.eat('{');
-        const body = this.lookahead?.type !== '}' ? this.StatementList('}') : [];
+        const body: any = this.lookahead?.type !== '}' ? this.StatementList('}') : [];
         this.eat('}');
-
-        return {
-            type: 'BlockStatement',
-            body
-        };
+        return factory.BlockStatement(body);
     }
 
     /**
@@ -141,14 +209,10 @@ export class Parser {
      * : Expression ';'
      * ;
      */
-    ExpressionStatement(): ExpressionStatement {
+    ExpressionStatement() {
         const expression = this.Expression();
         this.eat(';');
-        
-        return {
-            type: 'ExpressionStatement',
-            expression
-        }
+        return factory.ExpressionStatement(expression);
     }
 
     /**
@@ -156,11 +220,11 @@ export class Parser {
      * : Literal
      * ;
      */
-    Expression(): Expression {
+    Expression() {
         return this.Literal();
     }
 
-    Literal(): Literal {
+    Literal() {
         switch(this.lookahead?.type) {
             case 'Number': 
                 return this.NumericLiteral();
@@ -198,12 +262,9 @@ export class Parser {
      * : String
      * ; 
      */
-    StringLiteral(): StringLiteral {
+    StringLiteral(){
         const token = this.eat('String');
-        return {
-            type: 'StringLiteral',
-            value: token.value.slice(1, -1),
-        }
+        return factory.StringLiteral(token.value.slice(1, -1));
     };
 
     /**
@@ -211,11 +272,8 @@ export class Parser {
      * : Number
      * ; 
      */
-    NumericLiteral(): NumericLiteral {
+    NumericLiteral() {
         const token = this.eat('Number');
-        return {
-            type: 'NumericLiteral',
-            value: Number(token.value),
-        }
+        return factory.NumericLiteral(Number(token.value));
     }
 }

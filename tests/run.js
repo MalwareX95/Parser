@@ -28,15 +28,16 @@ function exec() {
 
         //Number:
         42;
+        10;
     `;
     const ast = parser.parse(program);
     console.log(JSON.stringify(ast, null, 2));
 }
-// exec()
+exec();
 function test(program, expected) {
     const ast = parser.parse(program);
     assert_1.default.deepEqual(ast, expected);
 }
-tests.forEach(testRun => testRun(test));
-console.log('All assertions passed!');
+// tests.forEach(testRun => testRun(test))
+// console.log('All assertions passed!')
 //# sourceMappingURL=run.js.map
