@@ -1,4 +1,4 @@
-import { Token, Tokenizer, TokenType } from "./Tokenizer";
+import { FunctionOfType, OperatorToken, PropType, Token, Tokenizer, TokenType } from "./Tokenizer";
 
 type NumericLiteral = {
     type: 'NumericLiteral';
@@ -14,12 +14,29 @@ type Literal =
     | NumericLiteral
     | StringLiteral
 
-type Expression = Literal
+
+type PrimaryExpression = 
+    | Literal
+    | BinaryExpression
+
+type MultiplicativeExpression = PrimaryExpression
+    
+type AdditiveExpression = MultiplicativeExpression
+
+type Expression = AdditiveExpression
 
 type ExpressionStatement = {
     type: 'ExpressionStatement';
     expression: Expression;
 }
+
+type BinaryExpression = 
+{ 
+    type: 'BinaryExpression';
+    left: AdditiveExpression;
+    operator: PropType<OperatorToken, 'value'>;
+    right: AdditiveExpression;
+} | Literal
 
 type BlockStatement = {
    type: 'BlockStatement';
@@ -153,11 +170,79 @@ export class Parser {
 
     /**
      * Expression
-     * : Literal
+     * : AdditiveExpression
      * ;
      */
     Expression(): Expression {
-        return this.Literal();
+        return this.AdditiveExpression();
+    }
+
+    /**
+     * ParenthesizedExpression
+     * : '(' Expression ')'
+     * ;
+     */
+    ParenthesizedExpression(): Expression {
+        this.eat('(');
+        const expression = this.Expression();
+        this.eat(')');
+        return expression;
+    }
+
+
+    /**
+     * PrimaryExpression
+     * : Literal
+     * | ParenthesizedExpression
+     * ;
+     */
+    PrimaryExpression(): PrimaryExpression {
+        switch(this.lookahead?.type) {
+            case '(':
+                return this.ParenthesizedExpression(); 
+            default:
+                return this.Literal();
+        }
+    }
+
+    /**
+     * MultiplicativeExpression
+     * : PrimaryExpression
+     * | MultiplicativeExpression MultiplicativeOperator PrimaryExpression -> PrimaryExpression MultiplicativeOperator MultiplicativeExpression MultiplicativeOperator MultiplicativeExpression
+     * ;
+     */
+    MultiplicativeExpression(): MultiplicativeExpression {
+        return this.BinaryExpression('PrimaryExpression', 'MultiplicativeOperator');
+    }
+    
+    /**
+     * AdditiveExpression
+     * : MultiplicativeExpression
+     * ; AdditiveExpression AdditiveOperator MultiplicativeExpression
+     */
+    AdditiveExpression(): AdditiveExpression {
+        return this.BinaryExpression('MultiplicativeExpression', 'AdditiveOperator');
+    }
+
+    BinaryExpression<K extends keyof Parser & FunctionOfType<Parser, PrimaryExpression>>(builderName: K, tokenType: PropType<OperatorToken, 'type'>) : BinaryExpression {
+        const builderMethod = this[builderName].bind(this);
+        let left = builderMethod();
+
+        while(this.lookahead?.type === tokenType) {
+            // Operator: +, -, *, /
+            const operator = this.eat<OperatorToken>(tokenType).value;
+            
+            const right = builderMethod();
+
+            left = {
+                type: 'BinaryExpression',
+                operator: operator,
+                left,
+                right,
+            }
+        }
+
+        return left;
     }
 
     Literal(): Literal {
@@ -171,7 +256,7 @@ export class Parser {
         throw new SyntaxError(`Literal: unexpected literal production`);
     }
 
-    eat(tokenType: TokenType): Token {
+    eat<T extends Token = Token>(tokenType: TokenType<T>): T {
         const token = this.lookahead;
 
         if(token == null) {
@@ -189,9 +274,8 @@ export class Parser {
         //Advance to next token.
         this.lookahead = this.tokenizer.getNextToken();
 
-        return token;
+        return token as T;
     }
-
 
     /**
      * StringLiteral

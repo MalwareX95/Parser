@@ -102,11 +102,71 @@ class Parser {
     }
     /**
      * Expression
-     * : Literal
+     * : AdditiveExpression
      * ;
      */
     Expression() {
-        return this.Literal();
+        return this.AdditiveExpression();
+    }
+    /**
+     * ParenthesizedExpression
+     * : '(' Expression ')'
+     * ;
+     */
+    ParenthesizedExpression() {
+        this.eat('(');
+        const expression = this.Expression();
+        this.eat(')');
+        return expression;
+    }
+    /**
+     * PrimaryExpression
+     * : Literal
+     * | ParenthesizedExpression
+     * ;
+     */
+    PrimaryExpression() {
+        var _a;
+        switch ((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) {
+            case '(':
+                return this.ParenthesizedExpression();
+            default:
+                return this.Literal();
+        }
+    }
+    /**
+     * MultiplicativeExpression
+     * : PrimaryExpression
+     * | MultiplicativeExpression MultiplicativeOperator PrimaryExpression -> PrimaryExpression MultiplicativeOperator MultiplicativeExpression MultiplicativeOperator MultiplicativeExpression
+     * ;
+     */
+    MultiplicativeExpression() {
+        return this.BinaryExpression('PrimaryExpression', 'MultiplicativeOperator');
+    }
+    /**
+     * AdditiveExpression
+     * : MultiplicativeExpression
+     * ; AdditiveExpression AdditiveOperator MultiplicativeExpression
+     */
+    AdditiveExpression() {
+        return this.BinaryExpression('MultiplicativeExpression', 'AdditiveOperator');
+    }
+    BinaryExpression(builderName, tokenType) {
+        var _a;
+        const builderMethod = this[builderName].bind(this);
+        let left = builderMethod();
+        while (((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) === tokenType) {
+            // Operator: +, -, *, /
+            const operator = this.eat(tokenType).value;
+            const right = builderMethod();
+            left = {
+                type: 'BinaryExpression',
+                operator: operator,
+                left,
+                right,
+            };
+        }
+        return left;
     }
     Literal() {
         var _a;

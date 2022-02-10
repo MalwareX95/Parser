@@ -4,12 +4,14 @@ import literalTests from './literals-test'
 import statementListTest from "./statement-list-test";
 import blockTest from "./block-test";
 import emptyStatementTest from "./empty-statement-test";
+import mathTest from "./math-test";
 
 const tests = [
     literalTests,
     statementListTest,
     blockTest,
     emptyStatementTest,
+    mathTest,
 ];
 
 const parser = new Parser();
@@ -19,26 +21,20 @@ const parser = new Parser();
  */
 function exec() {
     const program = `
-        /*
-         * Documentation comment
-         */
-        "hello";
-
-        //Number:
-        42;
+        2 + 2 * 2;
     `;
 
     const ast = parser.parse(program);
     console.log(JSON.stringify(ast, null, 2));
 }
 
-// exec()
+exec()
 
-function test(program: string, expected: Program) {
-   const ast = parser.parse(program);
-   assert.deepEqual(ast, expected); 
-}
+// function test(program: string, expected: Program) {
+//    const ast = parser.parse(program);
+//    assert.deepEqual(ast, expected); 
+// }
 
-tests.forEach(testRun => testRun(test))
+// tests.forEach(testRun => testRun(test))
 
 console.log('All assertions passed!')

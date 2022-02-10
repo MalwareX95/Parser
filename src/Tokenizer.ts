@@ -1,38 +1,72 @@
-type NumberToken = {
+export type NumberToken = {
     type: 'Number';
     value: string;
 }
 
-type StringToken = {
+export type StringToken = {
     type: 'String';
     value: string;
 }
 
-type SemicolonToken = {
+export type SemicolonToken = {
     type: ';';
-    value: string;
+    value: ';';
 }
 
-type OpenCurlyBrace = {
+export type AdditiveOperatorToken = {
+    type: 'AdditiveOperator';
+    value: '+' | '-';
+}
+
+export type MultiplicativeOperatorToken = {
+    type: 'MultiplicativeOperator';
+    value: '*' | '\\'
+}
+
+export type OpenCurlyBraceToken = {
     type: '{';
-    value: string;
+    value: '{';
 }
 
-type CloseCurlyBrace = {
+export type CloseCurlyBraceToken = {
     type: '}';
-    value: string;
+    value: '}';
 }
 
-type PropType<T, K extends keyof T> = T[K];
+export type OpenParanthesisToken = {
+    type: '(';
+    value: '(';
+}
+
+export type CloseParanthesisToken = {
+    type: ')';
+    value: ')';
+}
+
+export type FunctionOfType<T, R> = {
+    [K in keyof T]: T[K] extends () => R ? K : never
+}[keyof T]
+
+
+export type PropType<T, K extends keyof T> = T[K];
+
+export type OperatorToken = AdditiveOperatorToken | MultiplicativeOperatorToken
 
 export type Token = 
     | NumberToken 
     | StringToken
     | SemicolonToken
-    | OpenCurlyBrace
-    | CloseCurlyBrace;
+    | OpenCurlyBraceToken
+    | CloseCurlyBraceToken
+    | OperatorToken
+    | OpenParanthesisToken
+    | CloseParanthesisToken;
 
-export type TokenType = PropType<Token, 'type'>;
+
+export type TokenValue<T extends Token> = T['value']
+
+export type TokenType<T extends Token = Token> = PropType<T, 'type'>;
+
 
 const Spec: [RegExp, TokenType?][] = [
   //-----------------------------
@@ -53,10 +87,16 @@ const Spec: [RegExp, TokenType?][] = [
   [/^;/, ';'],
   [/^{/, '{'],
   [/^}/, '}'],
+  [/^\(/, '('],
+  [/^\)/, ')'],
 
   //-----------------------------
+  // Math operators +, -, *, /
+  [/^[+-]/, 'AdditiveOperator'],
+  [/^[*/]/, 'MultiplicativeOperator'],
+  //-----------------------------
   // Numbers: 
-  [ /^\d+/, 'Number' ],
+  [ /^\d+/, 'Number'],
 
   //-----------------------------
   // Strings:
@@ -103,7 +143,7 @@ export class Tokenizer {
 
             return {
                 type: tokenType,
-                value: tokenValue,
+                value: tokenValue as any,
             }
         }
 
