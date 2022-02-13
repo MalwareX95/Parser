@@ -1,8 +1,32 @@
-import { FunctionOfType, OperatorToken, PropType, Token, Tokenizer, TokenType } from "./Tokenizer";
+import { AssignToken, ComplexAssignToken, FunctionOfType as FunctionOfType, IdentifierToken, OperatorToken, PropType, ReturnTypeOfParserKey, SimpleAssignToken, Token, Tokenizer, TokenType } from "./Tokenizer";
 
-type NumericLiteral = {
-    type: 'NumericLiteral';
-    value: number;
+type Literal = ReturnTypeOfParserKey<'Literal'>
+type LeftHandSideExpression = ReturnTypeOfParserKey<'LeftHandSideExpression'>
+type Statement = ReturnTypeOfParserKey<'Statement'>
+type StatementList = Statement[];
+
+export type Program = {
+    type: 'Program';
+    body: StatementList;
+}
+
+type ExpressionStatement = {
+    type: 'ExpressionStatement';
+    expression: AssignmentExpression;
+}
+
+type BlockStatement = {
+    type: 'BlockStatement';
+    body: StatementList
+}
+
+type EmptyStatement = {
+    type: 'EmptyStatement',
+}
+
+type Identifier = {
+    type: 'Identifier',
+    name: string,
 }
 
 type StringLiteral = {
@@ -10,53 +34,28 @@ type StringLiteral = {
     value: string;
 }
 
-type Literal =
-    | NumericLiteral
-    | StringLiteral
+type NumericLiteral = {
+    type: 'NumericLiteral';
+    value: number;
+}
 
-
-type PrimaryExpression = 
-    | Literal
-    | BinaryExpression
-
-type MultiplicativeExpression = PrimaryExpression
-    
-type AdditiveExpression = MultiplicativeExpression
-
-type Expression = AdditiveExpression
-
-type ExpressionStatement = {
-    type: 'ExpressionStatement';
-    expression: Expression;
+type AssignmentExpression = 
+| BinaryExpression
+| {
+    type: 'AssignmentExpression';
+    operator: PropType<AssignToken, 'value'>;
+    left: AssignmentExpression;
+    right: AssignmentExpression;
 }
 
 type BinaryExpression = 
-{ 
+| Literal
+| LeftHandSideExpression
+| {
     type: 'BinaryExpression';
-    left: AdditiveExpression;
     operator: PropType<OperatorToken, 'value'>;
-    right: AdditiveExpression;
-} | Literal
-
-type BlockStatement = {
-   type: 'BlockStatement';
-   body: StatementList; 
-}
-
-type EmptyStatement = {
-    type: 'EmptyStatement';
-}
-
-type Statement = 
-    | ExpressionStatement
-    | BlockStatement
-    | EmptyStatement
-
-type StatementList = Statement[]
-
-export type Program = {
-    type: 'Program';
-    body: StatementList;
+    left: AssignmentExpression;
+    right: AssignmentExpression
 }
 
 export class Parser {
@@ -66,7 +65,7 @@ export class Parser {
 
     lookahead?: Token | null;
 
-    parse(str: string): Program {
+    parse(str: string) {
         this.str = str;
         this.tokenizer.init(str);
         /**
@@ -85,7 +84,7 @@ export class Parser {
      * : StatementList
      * ;
      */
-    Program(): Program {
+    Program() {
         return {
             type: 'Program',
             body: this.StatementList(),
@@ -99,7 +98,7 @@ export class Parser {
      * ;
      */
     StatementList(stopLookaheadType?: TokenType): StatementList {
-        const statementList: StatementList = [ this.Statement() ]
+        const statementList = [ this.Statement() ]
         
         while(this.lookahead && this.lookahead.type !== stopLookaheadType) {
             statementList.push(this.Statement())
@@ -114,7 +113,7 @@ export class Parser {
      * | BlockStatement
      * ;
      */
-    Statement(): Statement {
+    Statement() {
         switch(this.lookahead?.type) {
             case ';': 
                 return this.EmptyStatement();
@@ -168,13 +167,85 @@ export class Parser {
         }
     }
 
+    CheckValidAssignmentTarget(node: AssignmentExpression): Identifier {
+        if(node.type === 'Identifier') {
+            return node;
+        }
+
+        throw new SyntaxError('Invalid left-hand side in assignment expression');
+    }
+
     /**
-     * Expression
-     * : AdditiveExpression
+     * Identifier
+     * : IDENTIFIER
      * ;
      */
-    Expression(): Expression {
-        return this.AdditiveExpression();
+    Identifier(): Identifier {
+        const name = this.eat<IdentifierToken>('Identifier').value
+        return {
+            type: 'Identifier',
+            name,
+        }
+    }
+
+    /**
+     * LeftHandSideExpression
+     * : Identifier
+     */
+    LeftHandSideExpression() {
+        return this.Identifier();
+    }
+
+
+    /**
+     * Whether the token is an assignment operator.
+     */
+
+     IsAssignmentOperator(tokenType?: TokenType) {
+        return tokenType === 'SimpleAssign' || tokenType === 'ComplexAssign';
+     }
+
+    /**
+     * AssignmentExpression
+     * : AdditiveExpression
+     * | LeftHandSideExpression AssignmentOperator AssignmentExpression //Right recursion
+     * ;
+     */
+    AssignmentExpression(): AssignmentExpression {
+        const left = this.AdditiveExpression();
+
+        if (!this.IsAssignmentOperator(this.lookahead?.type)) {
+            return left;
+        }
+
+        return {
+            type: 'AssignmentExpression',
+            operator: this.AssignmentOperator().value,
+            left: this.CheckValidAssignmentTarget(left),
+            right: this.AssignmentExpression(),
+        };
+    }
+
+    /**
+     * AssignmentOperator
+     * : Simple_Assign
+     * ;
+     */
+    AssignmentOperator() {
+        if (this.lookahead?.type === 'SimpleAssign') {
+            return this.eat<SimpleAssignToken>('SimpleAssign')
+        }
+
+        return this.eat<ComplexAssignToken>('ComplexAssign')
+    }
+
+    /**
+     * Expression
+     * : AssignmentExpression
+     * ;
+     */
+    Expression() {
+        return this.AssignmentExpression();
     }
 
     /**
@@ -182,26 +253,37 @@ export class Parser {
      * : '(' Expression ')'
      * ;
      */
-    ParenthesizedExpression(): Expression {
+    ParenthesizedExpression() {
         this.eat('(');
         const expression = this.Expression();
         this.eat(')');
         return expression;
     }
 
+    /**
+     * Whether  the token is a literal
+     */
+    IsLiteral(tokenType?: TokenType) {
+         return tokenType === 'Number' || tokenType === 'String';
+    }
 
     /**
      * PrimaryExpression
      * : Literal
      * | ParenthesizedExpression
+     * | LeftHandSideExpression
      * ;
      */
-    PrimaryExpression(): PrimaryExpression {
+    PrimaryExpression() {
+        if (this.IsLiteral(this.lookahead?.type)) {
+            return this.Literal();
+        }
+
         switch(this.lookahead?.type) {
             case '(':
                 return this.ParenthesizedExpression(); 
             default:
-                return this.Literal();
+                return this.LeftHandSideExpression();
         }
     }
 
@@ -211,7 +293,7 @@ export class Parser {
      * | MultiplicativeExpression MultiplicativeOperator PrimaryExpression -> PrimaryExpression MultiplicativeOperator MultiplicativeExpression MultiplicativeOperator MultiplicativeExpression
      * ;
      */
-    MultiplicativeExpression(): MultiplicativeExpression {
+    MultiplicativeExpression(): AssignmentExpression {
         return this.BinaryExpression('PrimaryExpression', 'MultiplicativeOperator');
     }
     
@@ -220,40 +302,31 @@ export class Parser {
      * : MultiplicativeExpression
      * ; AdditiveExpression AdditiveOperator MultiplicativeExpression
      */
-    AdditiveExpression(): AdditiveExpression {
+    AdditiveExpression(): AssignmentExpression {
         return this.BinaryExpression('MultiplicativeExpression', 'AdditiveOperator');
     }
 
-    BinaryExpression<K extends keyof Parser & FunctionOfType<Parser, PrimaryExpression>>(builderName: K, tokenType: PropType<OperatorToken, 'type'>) : BinaryExpression {
-        const builderMethod = this[builderName].bind(this);
+    BinaryExpression<K extends keyof Parser & FunctionOfType<Parser, AssignmentExpression>>(
+        builderName: K, tokenType: PropType<OperatorToken, 'type'>) {
+            
+        const builderMethod = this[builderName].bind(this) as () => AssignmentExpression;
         let left = builderMethod();
 
         while(this.lookahead?.type === tokenType) {
             // Operator: +, -, *, /
             const operator = this.eat<OperatorToken>(tokenType).value;
-            
+
             const right = builderMethod();
 
             left = {
                 type: 'BinaryExpression',
-                operator: operator,
+                operator,
                 left,
                 right,
             }
         }
 
         return left;
-    }
-
-    Literal(): Literal {
-        switch(this.lookahead?.type) {
-            case 'Number': 
-                return this.NumericLiteral();
-            case 'String': 
-                return this.StringLiteral();
-        }
-
-        throw new SyntaxError(`Literal: unexpected literal production`);
     }
 
     eat<T extends Token = Token>(tokenType: TokenType<T>): T {
@@ -277,6 +350,17 @@ export class Parser {
         return token as T;
     }
 
+    Literal() {
+        switch(this.lookahead?.type) {
+            case 'Number': 
+                return this.NumericLiteral();
+            case 'String': 
+                return this.StringLiteral();
+        }
+
+        throw new SyntaxError(`Literal: unexpected literal production`);
+    }
+
     /**
      * StringLiteral
      * : String
@@ -287,7 +371,7 @@ export class Parser {
         return {
             type: 'StringLiteral',
             value: token.value.slice(1, -1),
-        }
+        };
     };
 
     /**

@@ -5,6 +5,7 @@ import statementListTest from "./statement-list-test";
 import blockTest from "./block-test";
 import emptyStatementTest from "./empty-statement-test";
 import mathTest from "./math-test";
+import assignmentTest from "./assignment-test";
 
 const tests = [
     literalTests,
@@ -12,6 +13,7 @@ const tests = [
     blockTest,
     emptyStatementTest,
     mathTest,
+    assignmentTest,
 ];
 
 const parser = new Parser();
@@ -21,7 +23,7 @@ const parser = new Parser();
  */
 function exec() {
     const program = `
-        2 + 2 * 2;
+        x + 1 + 1 * 2;
     `;
 
     const ast = parser.parse(program);

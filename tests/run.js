@@ -9,12 +9,14 @@ const statement_list_test_1 = __importDefault(require("./statement-list-test"));
 const block_test_1 = __importDefault(require("./block-test"));
 const empty_statement_test_1 = __importDefault(require("./empty-statement-test"));
 const math_test_1 = __importDefault(require("./math-test"));
+const assignment_test_1 = __importDefault(require("./assignment-test"));
 const tests = [
     literals_test_1.default,
     statement_list_test_1.default,
     block_test_1.default,
     empty_statement_test_1.default,
     math_test_1.default,
+    assignment_test_1.default,
 ];
 const parser = new Parser_1.Parser();
 /**
@@ -22,7 +24,7 @@ const parser = new Parser_1.Parser();
  */
 function exec() {
     const program = `
-        2 + 2 * 2;
+        x + 1 + 1 * 2;
     `;
     const ast = parser.parse(program);
     console.log(JSON.stringify(ast, null, 2));

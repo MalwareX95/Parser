@@ -19,12 +19,19 @@ const Spec = [
     [/^\(/, '('],
     [/^\)/, ')'],
     //-----------------------------
+    // Numbers: 
+    [/^\d+/, 'Number'],
+    //-----------------------------
+    // Identifiers:
+    [/^\w+/, 'Identifier'],
+    //-----------------------------
+    // Assignment operators: =, *=, /=, -=
+    [/^=/, 'SimpleAssign'],
+    [/^[*/+-]=/, 'ComplexAssign'],
+    //-----------------------------
     // Math operators +, -, *, /
     [/^[+-]/, 'AdditiveOperator'],
     [/^[*/]/, 'MultiplicativeOperator'],
-    //-----------------------------
-    // Numbers: 
-    [/^\d+/, 'Number'],
     //-----------------------------
     // Strings:
     [/^"[^"]*"/, 'String'],

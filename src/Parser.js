@@ -100,13 +100,75 @@ class Parser {
             expression
         };
     }
+    CheckValidAssignmentTarget(node) {
+        if (node.type === 'Identifier') {
+            return node;
+        }
+        throw new SyntaxError('Invalid left-hand side in assignment expression');
+    }
+    /**
+     * Identifier
+     * : IDENTIFIER
+     * ;
+     */
+    Identifier() {
+        const name = this.eat('Identifier').value;
+        return {
+            type: 'Identifier',
+            name,
+        };
+    }
+    /**
+     * LeftHandSideExpression
+     * : Identifier
+     */
+    LeftHandSideExpression() {
+        return this.Identifier();
+    }
+    /**
+     * Whether the token is an assignment operator.
+     */
+    IsAssignmentOperator(tokenType) {
+        return tokenType === 'SimpleAssign' || tokenType === 'ComplexAssign';
+    }
+    /**
+     * AssignmentExpression
+     * : AdditiveExpression
+     * | LeftHandSideExpression AssignmentOperator AssignmentExpression //Right recursion
+     * ;
+     */
+    AssignmentExpression() {
+        var _a;
+        const left = this.AdditiveExpression();
+        if (!this.IsAssignmentOperator((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type)) {
+            return left;
+        }
+        return {
+            type: 'AssignmentExpression',
+            operator: this.AssignmentOperator().value,
+            left: this.CheckValidAssignmentTarget(left),
+            right: this.AssignmentExpression(),
+        };
+    }
+    /**
+     * AssignmentOperator
+     * : Simple_Assign
+     * ;
+     */
+    AssignmentOperator() {
+        var _a;
+        if (((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) === 'SimpleAssign') {
+            return this.eat('SimpleAssign');
+        }
+        return this.eat('ComplexAssign');
+    }
     /**
      * Expression
-     * : AdditiveExpression
+     * : AssignmentExpression
      * ;
      */
     Expression() {
-        return this.AdditiveExpression();
+        return this.AssignmentExpression();
     }
     /**
      * ParenthesizedExpression
@@ -120,18 +182,28 @@ class Parser {
         return expression;
     }
     /**
+     * Whether  the token is a literal
+     */
+    IsLiteral(tokenType) {
+        return tokenType === 'Number' || tokenType === 'String';
+    }
+    /**
      * PrimaryExpression
      * : Literal
      * | ParenthesizedExpression
+     * | LeftHandSideExpression
      * ;
      */
     PrimaryExpression() {
-        var _a;
-        switch ((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) {
+        var _a, _b;
+        if (this.IsLiteral((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type)) {
+            return this.Literal();
+        }
+        switch ((_b = this.lookahead) === null || _b === void 0 ? void 0 : _b.type) {
             case '(':
                 return this.ParenthesizedExpression();
             default:
-                return this.Literal();
+                return this.LeftHandSideExpression();
         }
     }
     /**
@@ -161,22 +233,12 @@ class Parser {
             const right = builderMethod();
             left = {
                 type: 'BinaryExpression',
-                operator: operator,
+                operator,
                 left,
                 right,
             };
         }
         return left;
-    }
-    Literal() {
-        var _a;
-        switch ((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) {
-            case 'Number':
-                return this.NumericLiteral();
-            case 'String':
-                return this.StringLiteral();
-        }
-        throw new SyntaxError(`Literal: unexpected literal production`);
     }
     eat(tokenType) {
         const token = this.lookahead;
@@ -189,6 +251,16 @@ class Parser {
         //Advance to next token.
         this.lookahead = this.tokenizer.getNextToken();
         return token;
+    }
+    Literal() {
+        var _a;
+        switch ((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) {
+            case 'Number':
+                return this.NumericLiteral();
+            case 'String':
+                return this.StringLiteral();
+        }
+        throw new SyntaxError(`Literal: unexpected literal production`);
     }
     /**
      * StringLiteral

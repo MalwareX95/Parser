@@ -1,3 +1,5 @@
+import { Parser } from "./Parser"
+
 export type NumberToken = {
     type: 'Number';
     value: string;
@@ -43,9 +45,38 @@ export type CloseParanthesisToken = {
     value: ')';
 }
 
+export type IdentifierToken = {
+    type: 'Identifier';
+    value: string;
+}
+
+export type SimpleAssignToken = {
+    type: 'SimpleAssign';
+    value: '=';
+}
+
+export type ComplexAssignToken = {
+    type: 'ComplexAssign';
+    value: '*=' | '/=' | '-=' | '+='
+}
+
+export type AssignToken = 
+    | SimpleAssignToken
+    | ComplexAssignToken
+
 export type FunctionOfType<T, R> = {
     [K in keyof T]: T[K] extends () => R ? K : never
 }[keyof T]
+
+
+export type OnlyFunctionKeys<T> = {
+    [K in keyof T]: T[K] extends (...args: any) => any ? K : never
+}[keyof T]
+
+export type ReturnTypeOfKey<T, K extends keyof T & OnlyFunctionKeys<T>> = T[K] extends (...args: any) => infer R ? R : never;
+export type FunctionType<T, K extends keyof T & OnlyFunctionKeys<T>> = T[K] extends () => infer R ? () => R : never;
+
+export type ReturnTypeOfParserKey<K extends keyof Parser & OnlyFunctionKeys<Parser>> = ReturnTypeOfKey<Parser, K>
 
 
 export type PropType<T, K extends keyof T> = T[K];
@@ -60,7 +91,10 @@ export type Token =
     | CloseCurlyBraceToken
     | OperatorToken
     | OpenParanthesisToken
-    | CloseParanthesisToken;
+    | CloseParanthesisToken
+    | IdentifierToken
+    | SimpleAssignToken
+    | ComplexAssignToken;
 
 
 export type TokenValue<T extends Token> = T['value']
@@ -91,12 +125,23 @@ const Spec: [RegExp, TokenType?][] = [
   [/^\)/, ')'],
 
   //-----------------------------
+  // Numbers: 
+  [ /^\d+/, 'Number'],
+
+  //-----------------------------
+  // Identifiers:
+  [/^\w+/, 'Identifier'],
+
+  //-----------------------------
+  // Assignment operators: =, *=, /=, -=
+  [/^=/, 'SimpleAssign'],
+  [/^[*/+-]=/, 'ComplexAssign'],
+
+  //-----------------------------
   // Math operators +, -, *, /
   [/^[+-]/, 'AdditiveOperator'],
   [/^[*/]/, 'MultiplicativeOperator'],
-  //-----------------------------
-  // Numbers: 
-  [ /^\d+/, 'Number'],
+
 
   //-----------------------------
   // Strings:
