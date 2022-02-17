@@ -10,6 +10,16 @@ export type StringToken = {
     value: string;
 }
 
+export type LetKeyworkToken = {
+    type: 'let';
+    value: 'let';
+}
+
+export type CommaToken = {
+    type: ',';
+    value: ',';
+}
+
 export type SemicolonToken = {
     type: ';';
     value: ';';
@@ -94,7 +104,10 @@ export type Token =
     | CloseParanthesisToken
     | IdentifierToken
     | SimpleAssignToken
-    | ComplexAssignToken;
+    | ComplexAssignToken
+    | LetKeyworkToken
+    | CommaToken
+    ;
 
 
 export type TokenValue<T extends Token> = T['value']
@@ -123,6 +136,11 @@ const Spec: [RegExp, TokenType?][] = [
   [/^}/, '}'],
   [/^\(/, '('],
   [/^\)/, ')'],
+  [/^,/, ','],
+
+  //-----------------------------
+  // Keywords:
+  [/^\blet\b/, 'let'],
 
   //-----------------------------
   // Numbers: 

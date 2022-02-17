@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const Parser_1 = require("../src/Parser");
+const assert_1 = __importDefault(require("assert"));
 const literals_test_1 = __importDefault(require("./literals-test"));
 const statement_list_test_1 = __importDefault(require("./statement-list-test"));
 const block_test_1 = __importDefault(require("./block-test"));
@@ -24,16 +25,16 @@ const parser = new Parser_1.Parser();
  */
 function exec() {
     const program = `
-        x + 1 + 1 * 2;
+        let y = 2;
     `;
     const ast = parser.parse(program);
     console.log(JSON.stringify(ast, null, 2));
 }
 exec();
-// function test(program: string, expected: Program) {
-//    const ast = parser.parse(program);
-//    assert.deepEqual(ast, expected); 
-// }
-// tests.forEach(testRun => testRun(test))
+function test(program, expected) {
+    const ast = parser.parse(program);
+    assert_1.default.deepEqual(ast, expected);
+}
+tests.forEach(testRun => testRun(test));
 console.log('All assertions passed!');
 //# sourceMappingURL=run.js.map

@@ -45,9 +45,66 @@ class Parser {
         return statementList;
     }
     /**
+     * VariableInitilizer
+     * : SimpleAssign AssignmentExpression
+     * ;
+     */
+    VariableInitilizer() {
+        this.eat('SimpleAssign');
+        return this.AssignmentExpression();
+    }
+    /**
+     * VariableDeclaration
+     * : Identifier OptVariableInitializer
+     * ;
+     */
+    VariableDeclaration() {
+        var _a, _b;
+        const id = this.Identifier();
+        // OptVariableInitializer
+        const init = ((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) !== ';' && ((_b = this.lookahead) === null || _b === void 0 ? void 0 : _b.type) !== ','
+            ? this.VariableInitilizer()
+            : null;
+        return {
+            type: 'VariableDeclaration',
+            id,
+            init,
+        };
+    }
+    /**
+     * VariableDeclarationList
+     * : VariableDeclaration
+     * | VariableDeclarationList ',' VariableDeclaration
+     * ;
+     */
+    VariableDeclarationList() {
+        var _a;
+        const declarations = [];
+        do {
+            declarations.push(this.VariableDeclaration());
+        } while (((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) === ',' && this.eat(','));
+        return declarations;
+    }
+    /**
+     * VariableStatement
+     * : 'let' VariableDeclarationList ';'
+     * ;
+     */
+    VariableStatement() {
+        this.eat('let');
+        const declarations = this.VariableDeclarationList();
+        this.eat(';');
+        return {
+            type: 'VariableStatement',
+            declarations,
+        };
+    }
+    /**
      * Statement
      * : ExpressionStatement
      * | BlockStatement
+     * | EmptyStatement
+     * | VariableStatement
      * ;
      */
     Statement() {
@@ -57,6 +114,8 @@ class Parser {
                 return this.EmptyStatement();
             case '{':
                 return this.BlockStatement();
+            case 'let':
+                return this.VariableStatement();
             default:
                 return this.ExpressionStatement();
         }

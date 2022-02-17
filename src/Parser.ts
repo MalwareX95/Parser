@@ -1,4 +1,4 @@
-import { AssignToken, ComplexAssignToken, FunctionOfType as FunctionOfType, IdentifierToken, OperatorToken, PropType, ReturnTypeOfParserKey, SimpleAssignToken, Token, Tokenizer, TokenType } from "./Tokenizer";
+import { AssignToken, ComplexAssignToken, FunctionOfType, IdentifierToken, OperatorToken, PropType, ReturnTypeOfParserKey, SimpleAssignToken, Token, Tokenizer, TokenType } from "./Tokenizer";
 
 type Literal = ReturnTypeOfParserKey<'Literal'>
 type LeftHandSideExpression = ReturnTypeOfParserKey<'LeftHandSideExpression'>
@@ -37,6 +37,19 @@ type StringLiteral = {
 type NumericLiteral = {
     type: 'NumericLiteral';
     value: number;
+}
+
+type VariableDeclaration = {
+    type: 'VariableDeclaration';
+    id: Identifier;
+    init:  AssignmentExpression | null;
+}
+
+type VariableDeclarationList = VariableDeclaration[]
+
+type VariableStatement = { 
+    type: 'VariableStatement';
+    declarations: VariableDeclarationList;
 }
 
 type AssignmentExpression = 
@@ -107,10 +120,77 @@ export class Parser {
         return statementList;
     }
 
+
+    /**
+     * VariableInitilizer
+     * : SimpleAssign AssignmentExpression
+     * ;
+     */
+
+    VariableInitilizer(): AssignmentExpression {
+        this.eat('SimpleAssign');
+        return this.AssignmentExpression();
+    }
+
+    /**
+     * VariableDeclaration
+     * : Identifier OptVariableInitializer
+     * ;
+     */
+    VariableDeclaration(): VariableDeclaration {
+        const id = this.Identifier();
+        
+        // OptVariableInitializer
+        const init = 
+            this.lookahead?.type !== ';' && this.lookahead?.type !== ',' 
+            ? this.VariableInitilizer()
+            : null;
+        
+        return {
+            type: 'VariableDeclaration',
+            id,
+            init,
+        }
+    }
+
+    /**
+     * VariableDeclarationList
+     * : VariableDeclaration
+     * | VariableDeclarationList ',' VariableDeclaration
+     * ;
+     */
+    VariableDeclarationList(): VariableDeclarationList {
+        const declarations: VariableDeclarationList = [];
+
+        do {
+            declarations.push(this.VariableDeclaration());
+        } while(this.lookahead?.type === ',' && this.eat(','));
+
+        return declarations;
+    }
+
+    /**
+     * VariableStatement
+     * : 'let' VariableDeclarationList ';'
+     * ;
+     */
+    VariableStatement(): VariableStatement {
+        this.eat('let');
+        const declarations = this.VariableDeclarationList();
+        this.eat(';');
+
+        return {
+            type: 'VariableStatement',
+            declarations,
+        }
+    }
+
     /**
      * Statement
      * : ExpressionStatement
      * | BlockStatement
+     * | EmptyStatement
+     * | VariableStatement
      * ;
      */
     Statement() {
@@ -119,6 +199,8 @@ export class Parser {
                 return this.EmptyStatement();
             case '{':
                 return this.BlockStatement();
+            case 'let':
+                return this.VariableStatement();
             default: 
                 return this.ExpressionStatement();
         }

@@ -23,7 +23,7 @@ const parser = new Parser();
  */
 function exec() {
     const program = `
-        x + 1 + 1 * 2;
+        let y = 2;
     `;
 
     const ast = parser.parse(program);
@@ -32,11 +32,11 @@ function exec() {
 
 exec()
 
-// function test(program: string, expected: Program) {
-//    const ast = parser.parse(program);
-//    assert.deepEqual(ast, expected); 
-// }
+function test(program: string, expected: Program) {
+   const ast = parser.parse(program);
+   assert.deepEqual(ast, expected); 
+}
 
-// tests.forEach(testRun => testRun(test))
+tests.forEach(testRun => testRun(test))
 
 console.log('All assertions passed!')

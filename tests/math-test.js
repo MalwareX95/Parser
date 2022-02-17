@@ -60,7 +60,7 @@ exports.default = (test) => {
                 type: 'ExpressionStatement',
                 expression: {
                     type: 'BinaryExpression',
-                    operator: '-',
+                    operator: '*',
                     left: {
                         type: 'BinaryExpression',
                         left: {
@@ -88,7 +88,7 @@ exports.default = (test) => {
                 type: 'ExpressionStatement',
                 expression: {
                     type: 'BinaryExpression',
-                    operator: '+',
+                    operator: '*',
                     left: {
                         type: 'NumericLiteral',
                         value: 2,
