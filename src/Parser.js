@@ -100,11 +100,35 @@ class Parser {
         };
     }
     /**
+     * IfStatement
+     * : 'if' '(' Expression ')' Statement
+     * | 'if' '(' Expression ')' Statement 'else' Statement
+     * ;
+     */
+    IfStatement() {
+        var _a;
+        this.eat('if');
+        this.eat('(');
+        const test = this.Expression();
+        this.eat(')');
+        const consequent = this.Statement();
+        const alternate = ((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) === 'else'
+            ? this.eat('else') && this.Statement()
+            : null;
+        return {
+            type: 'IfStatement',
+            test,
+            consequent,
+            alternate,
+        };
+    }
+    /**
      * Statement
      * : ExpressionStatement
      * | BlockStatement
      * | EmptyStatement
      * | VariableStatement
+     * | IfStatement
      * ;
      */
     Statement() {
@@ -112,6 +136,8 @@ class Parser {
         switch ((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) {
             case ';':
                 return this.EmptyStatement();
+            case 'if':
+                return this.IfStatement();
             case '{':
                 return this.BlockStatement();
             case 'let':
@@ -191,14 +217,30 @@ class Parser {
         return tokenType === 'SimpleAssign' || tokenType === 'ComplexAssign';
     }
     /**
-     * AssignmentExpression
+     * RELATIONAL_OPERATOR: >, >=, <, <=
+     *
+     * x > y
+     * x >= y
+     * x < y
+     * x <= y
+     *
+     * RelationalExpression
      * : AdditiveExpression
+     * | AdditiveExpression RelationalOperator RelationalExpression
+     * ;
+     */
+    RelationalExpression() {
+        return this.BinaryExpression('AdditiveExpression', 'RelationalOperator');
+    }
+    /**
+     * AssignmentExpression
+     * : RelationalExpression
      * | LeftHandSideExpression AssignmentOperator AssignmentExpression //Right recursion
      * ;
      */
     AssignmentExpression() {
         var _a;
-        const left = this.AdditiveExpression();
+        const left = this.RelationalExpression();
         if (!this.IsAssignmentOperator((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type)) {
             return left;
         }

@@ -11,6 +11,7 @@ const block_test_1 = __importDefault(require("./block-test"));
 const empty_statement_test_1 = __importDefault(require("./empty-statement-test"));
 const math_test_1 = __importDefault(require("./math-test"));
 const assignment_test_1 = __importDefault(require("./assignment-test"));
+const if_test_1 = __importDefault(require("./if-test"));
 const tests = [
     literals_test_1.default,
     statement_list_test_1.default,
@@ -18,6 +19,8 @@ const tests = [
     empty_statement_test_1.default,
     math_test_1.default,
     assignment_test_1.default,
+    if_test_1.default,
+    // relationalTest
 ];
 const parser = new Parser_1.Parser();
 /**
@@ -25,7 +28,9 @@ const parser = new Parser_1.Parser();
  */
 function exec() {
     const program = `
-        let y = 2;
+        if(x > 5) {
+            x = 1;
+        }
     `;
     const ast = parser.parse(program);
     console.log(JSON.stringify(ast, null, 2));

@@ -6,6 +6,8 @@ import blockTest from "./block-test";
 import emptyStatementTest from "./empty-statement-test";
 import mathTest from "./math-test";
 import assignmentTest from "./assignment-test";
+import ifTest from "./if-test";
+import relationalTest from "./relational-test";
 
 const tests = [
     literalTests,
@@ -14,6 +16,8 @@ const tests = [
     emptyStatementTest,
     mathTest,
     assignmentTest,
+    ifTest,
+    // relationalTest
 ];
 
 const parser = new Parser();
@@ -23,7 +27,9 @@ const parser = new Parser();
  */
 function exec() {
     const program = `
-        let y = 2;
+        if(x > 5) {
+            x = 1;
+        }
     `;
 
     const ast = parser.parse(program);

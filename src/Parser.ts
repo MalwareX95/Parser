@@ -4,6 +4,7 @@ type Literal = ReturnTypeOfParserKey<'Literal'>
 type LeftHandSideExpression = ReturnTypeOfParserKey<'LeftHandSideExpression'>
 type Statement = ReturnTypeOfParserKey<'Statement'>
 type StatementList = Statement[];
+type Expression = ReturnTypeOfParserKey<'Expression'>
 
 export type Program = {
     type: 'Program';
@@ -50,6 +51,13 @@ type VariableDeclarationList = VariableDeclaration[]
 type VariableStatement = { 
     type: 'VariableStatement';
     declarations: VariableDeclarationList;
+}
+
+type IfStatement = {
+    type: 'IfStatement';
+    test: Expression;
+    consequent: Statement;
+    alternate: Statement | null;
 }
 
 type AssignmentExpression = 
@@ -186,17 +194,48 @@ export class Parser {
     }
 
     /**
+     * IfStatement
+     * : 'if' '(' Expression ')' Statement
+     * | 'if' '(' Expression ')' Statement 'else' Statement
+     * ;
+     */
+    IfStatement(): IfStatement {
+        this.eat('if');
+
+        this.eat('(');
+        const test = this.Expression();
+        this.eat(')');
+
+        const consequent = this.Statement();
+
+        const alternate = 
+            this.lookahead?.type === 'else' 
+            ? this.eat('else') && this.Statement() 
+            : null;
+        
+        return {
+            type: 'IfStatement',
+            test,
+            consequent,
+            alternate,
+        }
+    }
+
+    /**
      * Statement
      * : ExpressionStatement
      * | BlockStatement
      * | EmptyStatement
      * | VariableStatement
+     * | IfStatement
      * ;
      */
     Statement() {
         switch(this.lookahead?.type) {
             case ';': 
                 return this.EmptyStatement();
+            case 'if':
+                return this.IfStatement();
             case '{':
                 return this.BlockStatement();
             case 'let':
@@ -288,13 +327,30 @@ export class Parser {
      }
 
     /**
+     * RELATIONAL_OPERATOR: >, >=, <, <=
+     * 
+     * x > y
+     * x >= y
+     * x < y
+     * x <= y
+     * 
+     * RelationalExpression
+     * : AdditiveExpression 
+     * | AdditiveExpression RelationalOperator RelationalExpression
+     * ;
+     */
+    RelationalExpression(): AssignmentExpression {
+        return this.BinaryExpression('AdditiveExpression', 'RelationalOperator');
+    }
+
+    /**
      * AssignmentExpression
-     * : AdditiveExpression
+     * : RelationalExpression
      * | LeftHandSideExpression AssignmentOperator AssignmentExpression //Right recursion
      * ;
      */
     AssignmentExpression(): AssignmentExpression {
-        const left = this.AdditiveExpression();
+        const left = this.RelationalExpression();
 
         if (!this.IsAssignmentOperator(this.lookahead?.type)) {
             return left;

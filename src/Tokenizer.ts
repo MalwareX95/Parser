@@ -10,10 +10,25 @@ export type StringToken = {
     value: string;
 }
 
-export type LetKeyworkToken = {
+export type LetKeywordToken = {
     type: 'let';
     value: 'let';
 }
+
+export type IfKeywordToken = {
+    type: 'if';
+    value: 'if';
+}
+
+export type ElseKeywordToken = {
+    type: 'else';
+    value: 'else';
+}
+
+export type KeywordToken =
+    | LetKeywordToken
+    | IfKeywordToken
+    | ElseKeywordToken
 
 export type CommaToken = {
     type: ',';
@@ -33,6 +48,11 @@ export type AdditiveOperatorToken = {
 export type MultiplicativeOperatorToken = {
     type: 'MultiplicativeOperator';
     value: '*' | '\\'
+}
+
+export type RelationalOperatorToken = {
+    type: 'RelationalOperator';
+    value: '>' | '>=' | '<' | '<='
 }
 
 export type OpenCurlyBraceToken = {
@@ -91,7 +111,10 @@ export type ReturnTypeOfParserKey<K extends keyof Parser & OnlyFunctionKeys<Pars
 
 export type PropType<T, K extends keyof T> = T[K];
 
-export type OperatorToken = AdditiveOperatorToken | MultiplicativeOperatorToken
+export type OperatorToken = 
+    | AdditiveOperatorToken 
+    | MultiplicativeOperatorToken
+    | RelationalOperatorToken
 
 export type Token = 
     | NumberToken 
@@ -105,7 +128,7 @@ export type Token =
     | IdentifierToken
     | SimpleAssignToken
     | ComplexAssignToken
-    | LetKeyworkToken
+    | KeywordToken
     | CommaToken
     ;
 
@@ -141,6 +164,8 @@ const Spec: [RegExp, TokenType?][] = [
   //-----------------------------
   // Keywords:
   [/^\blet\b/, 'let'],
+  [/^\bif\b/, 'if'],
+  [/^\belse\b/, 'else'],
 
   //-----------------------------
   // Numbers: 
@@ -160,6 +185,9 @@ const Spec: [RegExp, TokenType?][] = [
   [/^[+-]/, 'AdditiveOperator'],
   [/^[*/]/, 'MultiplicativeOperator'],
 
+  //-----------------------------
+  // Relational operators: >, >=, <, <=
+  [/^[><]=?/, 'RelationalOperator'],
 
   //-----------------------------
   // Strings:
