@@ -17,7 +17,7 @@ const tests = [
     mathTest,
     assignmentTest,
     ifTest,
-    // relationalTest
+    relationalTest
 ];
 
 const parser = new Parser();

@@ -12,6 +12,7 @@ const empty_statement_test_1 = __importDefault(require("./empty-statement-test")
 const math_test_1 = __importDefault(require("./math-test"));
 const assignment_test_1 = __importDefault(require("./assignment-test"));
 const if_test_1 = __importDefault(require("./if-test"));
+const relational_test_1 = __importDefault(require("./relational-test"));
 const tests = [
     literals_test_1.default,
     statement_list_test_1.default,
@@ -20,7 +21,7 @@ const tests = [
     math_test_1.default,
     assignment_test_1.default,
     if_test_1.default,
-    // relationalTest
+    relational_test_1.default
 ];
 const parser = new Parser_1.Parser();
 /**
