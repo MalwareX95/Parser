@@ -1,7 +1,6 @@
-import { AssignToken, ComplexAssignToken, FunctionOfType, IdentifierToken, OperatorToken, PropType, ReturnTypeOfParserKey, SimpleAssignToken, Token, Tokenizer, TokenType } from "./Tokenizer";
+import { AdditiveOperatorToken, AssignToken, ComplexAssignToken, FunctionOfType, IdentifierToken, LogicalNot, LogicalOperator, OperatorToken, PropType, ReturnTypeOfParserKey, SimpleAssignToken, Token, Tokenizer, TokenType, TokenValue, UnaryOperatorToken } from "./Tokenizer";
 
 type Literal = ReturnTypeOfParserKey<'Literal'>
-type LeftHandSideExpression = ReturnTypeOfParserKey<'LeftHandSideExpression'>
 type Statement = ReturnTypeOfParserKey<'Statement'>
 type StatementList = Statement[];
 type Expression = ReturnTypeOfParserKey<'Expression'>
@@ -40,6 +39,16 @@ type NumericLiteral = {
     value: number;
 }
 
+type BooleanLiteral = {
+    type: 'BooleanLiteral';
+    value: boolean;
+}
+
+type NullLiteral = {
+    type: 'NullLiteral';
+    value: null;
+}
+
 type VariableDeclaration = {
     type: 'VariableDeclaration';
     id: Identifier;
@@ -60,7 +69,26 @@ type IfStatement = {
     alternate: Statement | null;
 }
 
+type LogicalExpression = 
+{
+    type: 'LogicalExpression',
+    operator: PropType<LogicalOperator, 'value'>
+    left: AssignmentExpression
+    right: AssignmentExpression
+}
+
+type UnaryExpression = 
+{
+    type: 'UnaryExpression';
+    operator: PropType<UnaryOperatorToken, 'value'>;
+    argument: AssignmentExpression
+}
+
 type AssignmentExpression = 
+| Literal
+| Identifier
+| LogicalExpression
+| UnaryExpression
 | BinaryExpression
 | {
     type: 'AssignmentExpression';
@@ -70,9 +98,7 @@ type AssignmentExpression =
 }
 
 type BinaryExpression = 
-| Literal
-| LeftHandSideExpression
-| {
+{
     type: 'BinaryExpression';
     operator: PropType<OperatorToken, 'value'>;
     left: AssignmentExpression;
@@ -311,10 +337,11 @@ export class Parser {
 
     /**
      * LeftHandSideExpression
-     * : Identifier
+     * : PrimaryExpression
+     * ;
      */
     LeftHandSideExpression() {
-        return this.Identifier();
+        return this.PrimaryExpression();
     }
 
 
@@ -345,12 +372,12 @@ export class Parser {
 
     /**
      * AssignmentExpression
-     * : RelationalExpression
+     * : LogicalORExpression
      * | LeftHandSideExpression AssignmentOperator AssignmentExpression //Right recursion
      * ;
      */
     AssignmentExpression(): AssignmentExpression {
-        const left = this.RelationalExpression();
+        const left = this.LogicalORExpression();
 
         if (!this.IsAssignmentOperator(this.lookahead?.type)) {
             return left;
@@ -377,6 +404,70 @@ export class Parser {
         return this.eat<ComplexAssignToken>('ComplexAssign')
     }
 
+
+    /**
+     * EqualityOperator: ==, !=
+     *   
+     *  x == y
+     *  x != y
+     * 
+     * EqualityExpression 
+     * : RelationalExpression EqualityOperator EqualityExpression
+     * | RelationalExpression
+     * ;
+     */
+    EqualityExpression(): AssignmentExpression {
+        return this.BinaryExpression('RelationalExpression', 'EqualityOperator')
+    }
+
+    /*Generic helper for LogicalExpression nodes.*/
+    LogicalExpression<K extends keyof Parser & FunctionOfType<Parser, AssignmentExpression>>(
+        builderName: K, tokenType: PropType<LogicalOperator, 'type'>) {
+            
+        const builderMethod = this[builderName].bind(this) as () => AssignmentExpression;
+        let left = builderMethod();
+
+        while(this.lookahead?.type === tokenType) {
+            const operator = this.eat<LogicalOperator>(tokenType).value;
+
+            const right = builderMethod();
+
+            left = {
+                type: 'LogicalExpression',
+                operator,
+                left,
+                right,
+            }
+        }
+
+        return left;
+    }
+
+    /**
+     * Logical OR expression
+     * x || y
+     * 
+     * LogicalORExpression 
+     * : EqualityExpression LogicalOr LogicalAndExpression
+     * | EqualityExpression
+     * ;
+     */
+    LogicalORExpression(): AssignmentExpression {
+        return this.LogicalExpression('LogicalANDExpression', 'LogicalOr');
+    }
+
+    /**
+     * Logical AND expression
+     * x && y
+     * 
+     * LogicalANDExpression 
+     * : EqualityExpression LogicalAnd LogicalAndExpression
+     * | EqualityExpression
+     * ;
+     */
+    LogicalANDExpression(): AssignmentExpression {
+        return this.LogicalExpression('EqualityExpression', 'LogicalAnd');
+    }
     /**
      * Expression
      * : AssignmentExpression
@@ -402,14 +493,18 @@ export class Parser {
      * Whether  the token is a literal
      */
     IsLiteral(tokenType?: TokenType) {
-         return tokenType === 'Number' || tokenType === 'String';
+         return tokenType === 'Number' || 
+                tokenType === 'String' || 
+                tokenType === 'false' || 
+                tokenType === 'true' || 
+                tokenType === 'null';
     }
 
     /**
      * PrimaryExpression
      * : Literal
      * | ParenthesizedExpression
-     * | LeftHandSideExpression
+     * | Identifier
      * ;
      */
     PrimaryExpression() {
@@ -419,20 +514,50 @@ export class Parser {
 
         switch(this.lookahead?.type) {
             case '(':
-                return this.ParenthesizedExpression(); 
+                return this.ParenthesizedExpression();                 
             default:
-                return this.LeftHandSideExpression();
+                return this.Identifier();
         }
     }
 
     /**
+     * UnaryExpression
+     * : LeftHandSideExpression
+     * | AdditiveOperator UnaryExpression
+     * | LogicalNot UnaryExpression
+     * ;
+     */
+    UnaryExpression(): AssignmentExpression {
+        let operator: TokenValue<UnaryOperatorToken> | null = null;
+
+        switch(this.lookahead?.type) {
+            case 'AdditiveOperator':
+                operator = this.eat<AdditiveOperatorToken>('AdditiveOperator').value;
+                break;
+            case 'LogicalNot': 
+                operator = this.eat<LogicalNot>('LogicalNot').value;
+                break;
+        }
+
+        if(operator != null) {
+            return {
+                type: 'UnaryExpression',
+                operator,
+                argument: this.UnaryExpression(),
+            }
+        }
+
+        return this.LeftHandSideExpression();
+    }
+
+    /**
      * MultiplicativeExpression
-     * : PrimaryExpression
-     * | MultiplicativeExpression MultiplicativeOperator PrimaryExpression -> PrimaryExpression MultiplicativeOperator MultiplicativeExpression MultiplicativeOperator MultiplicativeExpression
+     * : UnaryExpression
+     * | MultiplicativeExpression MultiplicativeOperator UnaryExpression
      * ;
      */
     MultiplicativeExpression(): AssignmentExpression {
-        return this.BinaryExpression('PrimaryExpression', 'MultiplicativeOperator');
+        return this.BinaryExpression('UnaryExpression', 'MultiplicativeOperator');
     }
     
     /**
@@ -488,12 +613,54 @@ export class Parser {
         return token as T;
     }
 
+
+    /**
+     * NullLiteral
+     * : 'null'
+     * ;
+     */
+    NullLiteral(): NullLiteral {
+        this.eat('null');
+        return {
+            type: 'NullLiteral',
+            value: null
+        }
+    }
+
+    /**
+     * BooleanLiteral
+     * : 'true'
+     * | 'false'
+     * ;
+     */
+    BooleanLiteral(value: boolean): BooleanLiteral {
+        this.eat(value ? 'true' : 'false');
+        return {
+            type: 'BooleanLiteral',
+            value
+        }
+    }
+
+    /**
+     * Literal
+     * : NumericLiteral
+     * | StringLiteral
+     * | BooleanLiteral
+     * | NullLiteral
+     * ;
+     */
     Literal() {
         switch(this.lookahead?.type) {
             case 'Number': 
                 return this.NumericLiteral();
             case 'String': 
                 return this.StringLiteral();
+            case 'true': 
+                return this.BooleanLiteral(true);
+            case 'false':
+                return this.BooleanLiteral(false);
+            case 'null':
+                return this.NullLiteral();
         }
 
         throw new SyntaxError(`Literal: unexpected literal production`);

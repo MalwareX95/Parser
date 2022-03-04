@@ -13,6 +13,9 @@ const math_test_1 = __importDefault(require("./math-test"));
 const assignment_test_1 = __importDefault(require("./assignment-test"));
 const if_test_1 = __importDefault(require("./if-test"));
 const relational_test_1 = __importDefault(require("./relational-test"));
+const equality_test_1 = __importDefault(require("./equality-test"));
+const logical_test_1 = __importDefault(require("./logical-test"));
+const unary_test_1 = __importDefault(require("./unary-test"));
 const tests = [
     literals_test_1.default,
     statement_list_test_1.default,
@@ -21,7 +24,10 @@ const tests = [
     math_test_1.default,
     assignment_test_1.default,
     if_test_1.default,
-    relational_test_1.default
+    relational_test_1.default,
+    equality_test_1.default,
+    logical_test_1.default,
+    unary_test_1.default,
 ];
 const parser = new Parser_1.Parser();
 /**
@@ -29,9 +35,7 @@ const parser = new Parser_1.Parser();
  */
 function exec() {
     const program = `
-        if(x > 5) {
-            x = 1;
-        }
+    +x * -10;
     `;
     const ast = parser.parse(program);
     console.log(JSON.stringify(ast, null, 2));

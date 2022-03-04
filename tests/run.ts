@@ -8,6 +8,9 @@ import mathTest from "./math-test";
 import assignmentTest from "./assignment-test";
 import ifTest from "./if-test";
 import relationalTest from "./relational-test";
+import equalityTest from "./equality-test";
+import logicalTest from "./logical-test";
+import unaryTest from "./unary-test";
 
 const tests = [
     literalTests,
@@ -17,7 +20,10 @@ const tests = [
     mathTest,
     assignmentTest,
     ifTest,
-    relationalTest
+    relationalTest,
+    equalityTest,
+    logicalTest,
+    unaryTest,
 ];
 
 const parser = new Parser();
@@ -27,9 +33,7 @@ const parser = new Parser();
  */
 function exec() {
     const program = `
-        if(x > 5) {
-            x = 1;
-        }
+    +x * -10;
     `;
 
     const ast = parser.parse(program);

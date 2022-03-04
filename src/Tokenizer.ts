@@ -25,10 +25,28 @@ export type ElseKeywordToken = {
     value: 'else';
 }
 
+export type TrueKeywordToken = {
+    type: 'true';
+    value: 'true';
+}
+
+export type FalseKeywordToken = {
+    type: 'false';
+    value: 'false';
+}
+
+export type NullKeywordToken = {
+    type: 'null';
+    value: 'null';
+}
+
 export type KeywordToken =
     | LetKeywordToken
     | IfKeywordToken
     | ElseKeywordToken
+    | TrueKeywordToken
+    | FalseKeywordToken
+    | NullKeywordToken
 
 export type CommaToken = {
     type: ',';
@@ -53,6 +71,34 @@ export type MultiplicativeOperatorToken = {
 export type RelationalOperatorToken = {
     type: 'RelationalOperator';
     value: '>' | '>=' | '<' | '<='
+}
+
+export type LogicalAndOperator = {
+    type: 'LogicalAnd',
+    value: '&&'
+}
+
+export type LogicalOrOperator = {
+    type: 'LogicalOr',
+    value: '||'
+}
+
+export type LogicalNot = {
+    type: 'LogicalNot',
+    value: '!',
+}
+
+export type UnaryOperatorToken = 
+    | AdditiveOperatorToken
+    | LogicalNot
+
+export type LogicalOperator = 
+    | LogicalAndOperator
+    | LogicalOrOperator
+
+export type EqualityOperatorToken = {
+    type: 'EqualityOperator';
+    value: '==' | '!='
 }
 
 export type OpenCurlyBraceToken = {
@@ -115,6 +161,7 @@ export type OperatorToken =
     | AdditiveOperatorToken 
     | MultiplicativeOperatorToken
     | RelationalOperatorToken
+    | EqualityOperatorToken
 
 export type Token = 
     | NumberToken 
@@ -123,6 +170,8 @@ export type Token =
     | OpenCurlyBraceToken
     | CloseCurlyBraceToken
     | OperatorToken
+    | LogicalOperator
+    | UnaryOperatorToken
     | OpenParanthesisToken
     | CloseParanthesisToken
     | IdentifierToken
@@ -166,7 +215,9 @@ const Spec: [RegExp, TokenType?][] = [
   [/^\blet\b/, 'let'],
   [/^\bif\b/, 'if'],
   [/^\belse\b/, 'else'],
-
+  [/^\btrue\b/, 'true'],
+  [/^\bfalse\b/, 'false'],
+  [/^\bnull\b/, 'null'],
   //-----------------------------
   // Numbers: 
   [ /^\d+/, 'Number'],
@@ -174,6 +225,10 @@ const Spec: [RegExp, TokenType?][] = [
   //-----------------------------
   // Identifiers:
   [/^\w+/, 'Identifier'],
+
+  //-----------------------------
+  // Equality operators: ==, !=
+  [/^[=!]=/, 'EqualityOperator'],
 
   //-----------------------------
   // Assignment operators: =, *=, /=, -=
@@ -188,6 +243,12 @@ const Spec: [RegExp, TokenType?][] = [
   //-----------------------------
   // Relational operators: >, >=, <, <=
   [/^[><]=?/, 'RelationalOperator'],
+
+  //-----------------------------
+  // Logical operators &&, ||
+  [/^&&/, 'LogicalAnd'],
+  [/^\|\|/, 'LogicalOr'],
+  [/^!/, 'LogicalNot'],
 
   //-----------------------------
   // Strings:
