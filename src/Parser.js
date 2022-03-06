@@ -86,18 +86,27 @@ class Parser {
         return declarations;
     }
     /**
-     * VariableStatement
-     * : 'let' VariableDeclarationList ';'
+     * VariableStatementInit
+     * : 'let' VariableDeclarationList
      * ;
      */
-    VariableStatement() {
+    VariableStatementInit() {
         this.eat('let');
         const declarations = this.VariableDeclarationList();
-        this.eat(';');
         return {
             type: 'VariableStatement',
             declarations,
         };
+    }
+    /**
+     * VariableStatement
+     * : VariableStatementInit ';'
+     * ;
+     */
+    VariableStatement() {
+        const variableStatement = this.VariableStatementInit();
+        this.eat(';');
+        return variableStatement;
     }
     /**
      * IfStatement
@@ -122,6 +131,105 @@ class Parser {
             alternate,
         };
     }
+    IterationStatement() {
+        var _a;
+        switch ((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) {
+            case 'while':
+                return this.WhileStatement();
+            case 'do':
+                return this.DoWhileStatement();
+            default:
+                return this.ForStatement();
+        }
+    }
+    /**
+     * WhileStatement
+     * : 'while' '(' Expression ')' Statement
+     * ;
+     */
+    WhileStatement() {
+        this.eat('while');
+        this.eat('(');
+        const test = this.Expression();
+        this.eat(')');
+        const body = this.Statement();
+        return {
+            type: 'WhileStatement',
+            test,
+            body,
+        };
+    }
+    /**
+     * DoWhileStatement
+     * : 'do' Statement 'while' '(' Expression ')' ';'
+     * ;
+     */
+    DoWhileStatement() {
+        this.eat('do');
+        const body = this.Statement();
+        this.eat('while');
+        this.eat('(');
+        const test = this.Expression();
+        this.eat(')');
+        this.eat(';');
+        return {
+            type: 'DoWhileStatement',
+            body,
+            test,
+        };
+    }
+    /**
+     * ForStatementInit
+     * : VariableStatementInit
+     * | Expression
+     * ;
+     */
+    ForStatementInit() {
+        var _a;
+        if (((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) === 'let') {
+            return this.VariableStatementInit();
+        }
+        return this.SequenceExpression();
+    }
+    SequenceExpression() {
+        var _a;
+        const assignments = [];
+        do {
+            const expression = this.AssignmentExpression();
+            if (expression.type !== 'AssignmentExpression') {
+                throw SyntaxError(`unexpected expression: ${expression.type}, expected AssignmentExpression`);
+            }
+            assignments.push(expression);
+        } while (((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) === ',' && this.eat(','));
+        return {
+            type: 'SequenceExpression',
+            assignments,
+        };
+    }
+    /**
+     * ForStatement
+     * : 'for' '(' OptForStatementInit ';' OptExpression ';' OptExpression ')' Statement
+     * ;
+     */
+    ForStatement() {
+        var _a, _b, _c;
+        this.eat('for');
+        this.eat('(');
+        const init = ((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) !== ';' ? this.ForStatementInit() : null;
+        this.eat(';');
+        const test = ((_b = this.lookahead) === null || _b === void 0 ? void 0 : _b.type) !== ';' ? this.Expression() : null;
+        this.eat(';');
+        const update = ((_c = this.lookahead) === null || _c === void 0 ? void 0 : _c.type) !== ')' ? this.Expression() : null;
+        this.eat(')');
+        const body = this.Statement();
+        return {
+            type: 'ForStatement',
+            init,
+            test,
+            update,
+            body,
+        };
+    }
     /**
      * Statement
      * : ExpressionStatement
@@ -129,6 +237,7 @@ class Parser {
      * | EmptyStatement
      * | VariableStatement
      * | IfStatement
+     * | IterationStatement
      * ;
      */
     Statement() {
@@ -142,6 +251,10 @@ class Parser {
                 return this.BlockStatement();
             case 'let':
                 return this.VariableStatement();
+            case 'while':
+            case 'do':
+            case 'for':
+                return this.IterationStatement();
             default:
                 return this.ExpressionStatement();
         }

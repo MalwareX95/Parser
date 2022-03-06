@@ -16,6 +16,9 @@ const relational_test_1 = __importDefault(require("./relational-test"));
 const equality_test_1 = __importDefault(require("./equality-test"));
 const logical_test_1 = __importDefault(require("./logical-test"));
 const unary_test_1 = __importDefault(require("./unary-test"));
+const while_test_1 = __importDefault(require("./while-test"));
+const do_while_test_1 = __importDefault(require("./do-while-test"));
+const for_test_1 = __importDefault(require("./for-test"));
 const tests = [
     literals_test_1.default,
     statement_list_test_1.default,
@@ -28,14 +31,19 @@ const tests = [
     equality_test_1.default,
     logical_test_1.default,
     unary_test_1.default,
+    while_test_1.default,
+    do_while_test_1.default,
+    for_test_1.default,
 ];
 const parser = new Parser_1.Parser();
 /**
  * For manual tests.
  */
 function exec() {
+    ``;
     const program = `
-    +x * -10;
+    for (;;) {
+    }
     `;
     const ast = parser.parse(program);
     console.log(JSON.stringify(ast, null, 2));

@@ -3,6 +3,7 @@ import { AdditiveOperatorToken, AssignToken, ComplexAssignToken, FunctionOfType,
 type Literal = ReturnTypeOfParserKey<'Literal'>
 type Statement = ReturnTypeOfParserKey<'Statement'>
 type StatementList = Statement[];
+type AssignmentExpressionList = AssignmentExpression[];
 type Expression = ReturnTypeOfParserKey<'Expression'>
 
 export type Program = {
@@ -62,11 +63,38 @@ type VariableStatement = {
     declarations: VariableDeclarationList;
 }
 
+type SequenceExpression = {
+    type: 'SequenceExpression';
+    assignments: AssignmentExpressionList;
+}
+
 type IfStatement = {
     type: 'IfStatement';
     test: Expression;
     consequent: Statement;
     alternate: Statement | null;
+}
+
+type WhileStatement = {
+    type: 'WhileStatement';
+    test: Expression;
+    body: Statement;
+}
+
+type DoWhileStatement = {
+    type: 'DoWhileStatement';
+    body: Statement;
+    test: Expression;
+}
+
+type ForStatementInit = ReturnTypeOfParserKey<'ForStatementInit'>
+
+type ForStatement = {
+    type: 'ForStatement';
+    init: ForStatementInit | null;
+    test: Expression | null;
+    update: Expression | null;
+    body: Statement;
 }
 
 type LogicalExpression = 
@@ -204,19 +232,28 @@ export class Parser {
     }
 
     /**
-     * VariableStatement
-     * : 'let' VariableDeclarationList ';'
+     * VariableStatementInit
+     * : 'let' VariableDeclarationList
      * ;
      */
-    VariableStatement(): VariableStatement {
+    VariableStatementInit(): VariableStatement {
         this.eat('let');
         const declarations = this.VariableDeclarationList();
-        this.eat(';');
-
-        return {
+        return  {
             type: 'VariableStatement',
             declarations,
         }
+    }
+
+    /**
+     * VariableStatement
+     * : VariableStatementInit ';'
+     * ;
+     */
+    VariableStatement(): VariableStatement {
+        const variableStatement = this.VariableStatementInit();
+        this.eat(';');
+        return variableStatement;
     }
 
     /**
@@ -247,6 +284,125 @@ export class Parser {
         }
     }
 
+
+    IterationStatement() {
+        switch(this.lookahead?.type) {
+            case 'while':
+                return this.WhileStatement();
+            case 'do':
+                return this.DoWhileStatement();
+            default:
+                return this.ForStatement();
+        }
+    }
+
+    /**
+     * WhileStatement
+     * : 'while' '(' Expression ')' Statement
+     * ;
+     */
+    WhileStatement(): WhileStatement {
+        this.eat('while');
+
+        this.eat('(');
+        const test = this.Expression();
+        this.eat(')');
+
+        const body = this.Statement();
+
+        return {
+            type: 'WhileStatement',
+            test,
+            body,
+        }
+    }
+
+    /**
+     * DoWhileStatement
+     * : 'do' Statement 'while' '(' Expression ')' ';'
+     * ;
+     */
+    DoWhileStatement(): DoWhileStatement {
+        this.eat('do');
+
+        const body = this.Statement();
+        
+        this.eat('while');
+        this.eat('(');
+        const test = this.Expression();
+        this.eat(')');
+        this.eat(';');
+
+        return {
+            type: 'DoWhileStatement',
+            body,
+            test,
+        }
+    }
+
+    /**
+     * ForStatementInit
+     * : VariableStatementInit
+     * | Expression
+     * ;
+     */
+    ForStatementInit() {
+        if(this.lookahead?.type === 'let') {
+            return this.VariableStatementInit();
+        }
+
+        return this.SequenceExpression();
+    }
+
+
+    SequenceExpression(): SequenceExpression {
+        const assignments: AssignmentExpression[] = [];
+
+        do {
+            const expression = this.AssignmentExpression();
+            
+            if(expression.type !== 'AssignmentExpression') {
+                throw SyntaxError(`unexpected expression: ${expression.type}, expected AssignmentExpression`)
+            }
+            assignments.push(expression)
+        }
+        while(this.lookahead?.type === ',' && this.eat(','))
+        
+        return {
+            type: 'SequenceExpression',
+            assignments,
+        };
+    }
+
+    /**
+     * ForStatement
+     * : 'for' '(' OptForStatementInit ';' OptExpression ';' OptExpression ')' Statement
+     * ;
+     */
+    ForStatement(): ForStatement {
+        this.eat('for')
+        this.eat('(')
+
+        const init = this.lookahead?.type !== ';' ? this.ForStatementInit() : null;
+        this.eat(';')
+
+        const test = this.lookahead?.type !== ';' ? this.Expression() : null;
+        this.eat(';')
+
+        const update = this.lookahead?.type !== ')' ? this.Expression() : null;
+        this.eat(')');
+
+        const body = this.Statement();
+
+        return {
+            type: 'ForStatement',
+            init,
+            test,
+            update,
+            body,
+        }
+    }
+
     /**
      * Statement
      * : ExpressionStatement
@@ -254,6 +410,7 @@ export class Parser {
      * | EmptyStatement
      * | VariableStatement
      * | IfStatement
+     * | IterationStatement
      * ;
      */
     Statement() {
@@ -266,6 +423,10 @@ export class Parser {
                 return this.BlockStatement();
             case 'let':
                 return this.VariableStatement();
+            case 'while':
+            case 'do':
+            case 'for':
+                return this.IterationStatement();
             default: 
                 return this.ExpressionStatement();
         }

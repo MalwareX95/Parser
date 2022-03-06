@@ -11,6 +11,9 @@ import relationalTest from "./relational-test";
 import equalityTest from "./equality-test";
 import logicalTest from "./logical-test";
 import unaryTest from "./unary-test";
+import whileTest from "./while-test";
+import doWhileTest from "./do-while-test";
+import forTest from "./for-test";
 
 const tests = [
     literalTests,
@@ -24,6 +27,9 @@ const tests = [
     equalityTest,
     logicalTest,
     unaryTest,
+    whileTest,
+    doWhileTest,
+    forTest,
 ];
 
 const parser = new Parser();
@@ -31,9 +37,10 @@ const parser = new Parser();
 /**
  * For manual tests.
  */
-function exec() {
+function exec() {``
     const program = `
-    +x * -10;
+    for (;;) {
+    }
     `;
 
     const ast = parser.parse(program);

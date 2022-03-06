@@ -25,6 +25,21 @@ export type ElseKeywordToken = {
     value: 'else';
 }
 
+export type WhileKeywordToken = {
+    type: 'while';
+    value: 'while';
+}
+
+export type DoKeywordToken = {
+    type: 'do';
+    value: 'do';
+}
+
+export type ForKeywordToken = {
+    type: 'for';
+    value: 'for';
+}
+
 export type TrueKeywordToken = {
     type: 'true';
     value: 'true';
@@ -47,6 +62,9 @@ export type KeywordToken =
     | TrueKeywordToken
     | FalseKeywordToken
     | NullKeywordToken
+    | WhileKeywordToken
+    | DoKeywordToken
+    | ForKeywordToken
 
 export type CommaToken = {
     type: ',';
@@ -218,6 +236,9 @@ const Spec: [RegExp, TokenType?][] = [
   [/^\btrue\b/, 'true'],
   [/^\bfalse\b/, 'false'],
   [/^\bnull\b/, 'null'],
+  [/^\bwhile\b/, 'while'],
+  [/^\bdo\b/, 'do'],
+  [/^\bfor\b/, 'for'],
   //-----------------------------
   // Numbers: 
   [ /^\d+/, 'Number'],
@@ -292,11 +313,11 @@ export class Tokenizer {
             if(tokenType == null) {
                 return this.getNextToken();
             }
-
+            
             return {
                 type: tokenType,
-                value: tokenValue as any,
-            }
+                value: tokenValue,
+            } as Token
         }
 
         throw new SyntaxError(`Unexpected token: "${string[0]}"`);
