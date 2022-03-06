@@ -14,6 +14,7 @@ import unaryTest from "./unary-test";
 import whileTest from "./while-test";
 import doWhileTest from "./do-while-test";
 import forTest from "./for-test";
+import functionDeclarationTest from "./function-declaration-test";
 
 const tests = [
     literalTests,
@@ -30,6 +31,7 @@ const tests = [
     whileTest,
     doWhileTest,
     forTest,
+    functionDeclarationTest,
 ];
 
 const parser = new Parser();
@@ -39,8 +41,11 @@ const parser = new Parser();
  */
 function exec() {``
     const program = `
-    for (;;) {
+
+    def empty(x, y) {
     }
+
+    //square(2);
     `;
 
     const ast = parser.parse(program);

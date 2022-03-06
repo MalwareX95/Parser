@@ -19,6 +19,7 @@ const unary_test_1 = __importDefault(require("./unary-test"));
 const while_test_1 = __importDefault(require("./while-test"));
 const do_while_test_1 = __importDefault(require("./do-while-test"));
 const for_test_1 = __importDefault(require("./for-test"));
+const function_declaration_test_1 = __importDefault(require("./function-declaration-test"));
 const tests = [
     literals_test_1.default,
     statement_list_test_1.default,
@@ -34,6 +35,7 @@ const tests = [
     while_test_1.default,
     do_while_test_1.default,
     for_test_1.default,
+    function_declaration_test_1.default,
 ];
 const parser = new Parser_1.Parser();
 /**
@@ -42,8 +44,11 @@ const parser = new Parser_1.Parser();
 function exec() {
     ``;
     const program = `
-    for (;;) {
+
+    def empty(x, y) {
     }
+
+    //square(2);
     `;
     const ast = parser.parse(program);
     console.log(JSON.stringify(ast, null, 2));

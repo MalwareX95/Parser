@@ -55,6 +55,16 @@ export type NullKeywordToken = {
     value: 'null';
 }
 
+export type DefKeywordToken = {
+    type: 'def';
+    value: 'def';
+}
+
+export type ReturnKeywordToken = {
+    type: 'return';
+    value: 'return;'
+}
+
 export type KeywordToken =
     | LetKeywordToken
     | IfKeywordToken
@@ -65,6 +75,8 @@ export type KeywordToken =
     | WhileKeywordToken
     | DoKeywordToken
     | ForKeywordToken
+    | DefKeywordToken
+    | ReturnKeywordToken
 
 export type CommaToken = {
     type: ',';
@@ -239,6 +251,8 @@ const Spec: [RegExp, TokenType?][] = [
   [/^\bwhile\b/, 'while'],
   [/^\bdo\b/, 'do'],
   [/^\bfor\b/, 'for'],
+  [/^\bdef\b/, 'def'],
+  [/^\breturn\b/, 'return'],
   //-----------------------------
   // Numbers: 
   [ /^\d+/, 'Number'],

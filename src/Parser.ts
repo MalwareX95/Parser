@@ -87,6 +87,20 @@ type DoWhileStatement = {
     test: Expression;
 }
 
+type FormalParameterList = ReturnTypeOfParserKey<'FormalParameterList'>
+
+type FunctionDeclaration = {
+    type: 'FunctionDeclaration';
+    name: Identifier;
+    params: FormalParameterList;
+    body: BlockStatement;
+}
+
+type ReturnStatement = {
+    type: 'ReturnStatement';
+    argument: Expression | null;
+}
+
 type ForStatementInit = ReturnTypeOfParserKey<'ForStatementInit'>
 
 type ForStatement = {
@@ -404,6 +418,64 @@ export class Parser {
     }
 
     /**
+     * FormalParameterList
+     * : Identifier
+     * | FormalParameterList ',' Identifier
+     * ;
+     */
+    FormalParameterList() {
+        const params: Identifier[] = [];
+
+        do {
+            params.push(this.Identifier());
+        } while(this.lookahead?.type === ',' && this.eat(','));
+
+        return params;
+    }
+
+    /**
+     * FunctionDeclaration 
+     * : 'def' Identifier '(' OptFormalParameterList ')' BlockStatement
+     * ;
+     */
+    FunctionDeclaration(): FunctionDeclaration {
+        this.eat('def');
+
+        const name = this.Identifier();
+        this.eat('(')
+
+        //OptFormalParameterList
+        const params = this.lookahead?.type !== ')' ? this.FormalParameterList() : [];
+        this.eat(')')
+
+        const body = this.BlockStatement();
+
+        return {
+            type: 'FunctionDeclaration',
+            name,
+            params,
+            body,
+        }
+    }
+
+    /**
+     * ReturnStatement
+     * : 'return' OptExpression ';'
+     * ;
+     */
+    ReturnStatement(): ReturnStatement {
+        this.eat('return');
+
+        const argument = this.lookahead?.type !== ';' ? this.Expression() : null;
+        this.eat(';')
+
+        return {
+            type: 'ReturnStatement',
+            argument,
+        }
+    }
+
+    /**
      * Statement
      * : ExpressionStatement
      * | BlockStatement
@@ -411,6 +483,8 @@ export class Parser {
      * | VariableStatement
      * | IfStatement
      * | IterationStatement
+     * | FunctionDeclaration
+     * | ReturnStatement
      * ;
      */
     Statement() {
@@ -423,6 +497,10 @@ export class Parser {
                 return this.BlockStatement();
             case 'let':
                 return this.VariableStatement();
+            case 'def':
+                return this.FunctionDeclaration();
+            case 'return':
+                return this.ReturnStatement();
             case 'while':
             case 'do':
             case 'for':

@@ -231,6 +231,56 @@ class Parser {
         };
     }
     /**
+     * FormalParameterList
+     * : Identifier
+     * | FormalParameterList ',' Identifier
+     * ;
+     */
+    FormalParameterList() {
+        var _a;
+        const params = [];
+        do {
+            params.push(this.Identifier());
+        } while (((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) === ',' && this.eat(','));
+        return params;
+    }
+    /**
+     * FunctionDeclaration
+     * : 'def' Identifier '(' OptFormalParameterList ')' BlockStatement
+     * ;
+     */
+    FunctionDeclaration() {
+        var _a;
+        this.eat('def');
+        const name = this.Identifier();
+        this.eat('(');
+        //OptFormalParameterList
+        const params = ((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) !== ')' ? this.FormalParameterList() : [];
+        this.eat(')');
+        const body = this.BlockStatement();
+        return {
+            type: 'FunctionDeclaration',
+            name,
+            params,
+            body,
+        };
+    }
+    /**
+     * ReturnStatement
+     * : 'return' OptExpression ';'
+     * ;
+     */
+    ReturnStatement() {
+        var _a;
+        this.eat('return');
+        const argument = ((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) !== ';' ? this.Expression() : null;
+        this.eat(';');
+        return {
+            type: 'ReturnStatement',
+            argument,
+        };
+    }
+    /**
      * Statement
      * : ExpressionStatement
      * | BlockStatement
@@ -238,6 +288,8 @@ class Parser {
      * | VariableStatement
      * | IfStatement
      * | IterationStatement
+     * | FunctionDeclaration
+     * | ReturnStatement
      * ;
      */
     Statement() {
@@ -251,6 +303,10 @@ class Parser {
                 return this.BlockStatement();
             case 'let':
                 return this.VariableStatement();
+            case 'def':
+                return this.FunctionDeclaration();
+            case 'return':
+                return this.ReturnStatement();
             case 'while':
             case 'do':
             case 'for':
