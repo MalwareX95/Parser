@@ -355,7 +355,7 @@ class Parser {
         };
     }
     CheckValidAssignmentTarget(node) {
-        if (node.type === 'Identifier') {
+        if (node.type === 'Identifier' || node.type === 'MemberExpression') {
             return node;
         }
         throw new SyntaxError('Invalid left-hand side in assignment expression');
@@ -374,11 +374,48 @@ class Parser {
     }
     /**
      * LeftHandSideExpression
-     * : PrimaryExpression
+     * : MemberExpression
      * ;
      */
     LeftHandSideExpression() {
-        return this.PrimaryExpression();
+        return this.MemberExpression();
+    }
+    /**
+     * MemberExpression
+     * : PrimaryExpression
+     * | MemberExpression '.' Identifier
+     * | MemberExpression '[' Expression ']'
+     * ;
+     */
+    MemberExpression() {
+        var _a, _b, _c, _d;
+        let object = this.PrimaryExpression();
+        while (((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) === '.' || ((_b = this.lookahead) === null || _b === void 0 ? void 0 : _b.type) === '[') {
+            // MemberExpression '.' Identifier
+            if (((_c = this.lookahead) === null || _c === void 0 ? void 0 : _c.type) === '.') {
+                this.eat('.');
+                const property = this.Identifier();
+                object = {
+                    type: 'MemberExpression',
+                    computed: false,
+                    object,
+                    property,
+                };
+            }
+            // MemberExpression '[' Expression ']'
+            if (((_d = this.lookahead) === null || _d === void 0 ? void 0 : _d.type) === '[') {
+                this.eat('[');
+                const property = this.Expression();
+                this.eat(']');
+                object = {
+                    type: 'MemberExpression',
+                    computed: true,
+                    object,
+                    property,
+                };
+            }
+        }
+        return object;
     }
     /**
      * Whether the token is an assignment operator.

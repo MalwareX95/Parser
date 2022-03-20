@@ -111,6 +111,14 @@ type ForStatement = {
     body: Statement;
 }
 
+type MemberExpression = 
+{
+    type: 'MemberExpression';
+    computed: boolean;
+    object: AssignmentExpression;
+    property: Expression
+}
+
 type LogicalExpression = 
 {
     type: 'LogicalExpression',
@@ -132,6 +140,7 @@ type AssignmentExpression =
 | LogicalExpression
 | UnaryExpression
 | BinaryExpression
+| MemberExpression
 | {
     type: 'AssignmentExpression';
     operator: PropType<AssignToken, 'value'>;
@@ -553,8 +562,8 @@ export class Parser {
         }
     }
 
-    CheckValidAssignmentTarget(node: AssignmentExpression): Identifier {
-        if(node.type === 'Identifier') {
+    CheckValidAssignmentTarget(node: AssignmentExpression): Identifier | MemberExpression {
+        if(node.type === 'Identifier' || node.type === 'MemberExpression') {
             return node;
         }
 
@@ -576,11 +585,51 @@ export class Parser {
 
     /**
      * LeftHandSideExpression
-     * : PrimaryExpression
+     * : MemberExpression
      * ;
      */
     LeftHandSideExpression() {
-        return this.PrimaryExpression();
+        return this.MemberExpression();
+    }
+
+    /**
+     * MemberExpression
+     * : PrimaryExpression
+     * | MemberExpression '.' Identifier
+     * | MemberExpression '[' Expression ']'
+     * ;
+     */
+    MemberExpression() {
+        let object = this.PrimaryExpression();
+
+        while(this.lookahead?.type === '.' || this.lookahead?.type === '[') {
+            // MemberExpression '.' Identifier
+            if(this.lookahead?.type === '.') {
+                this.eat('.');
+                const property = this.Identifier();
+                object = {
+                    type: 'MemberExpression',
+                    computed: false,
+                    object,
+                    property,
+                }
+            }
+
+            // MemberExpression '[' Expression ']'
+            if(this.lookahead?.type === '[') {
+                this.eat('[');
+                const property = this.Expression();
+                this.eat(']');
+                object = {
+                    type: 'MemberExpression',
+                    computed: true,
+                    object,
+                    property,
+                }
+            }
+        }
+
+        return object;
     }
 
 

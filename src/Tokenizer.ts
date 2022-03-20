@@ -83,6 +83,21 @@ export type CommaToken = {
     value: ',';
 }
 
+export type DotToken = {
+    type: '.';
+    value: '.';
+}
+
+export type OpenSquareBracket = {
+    type: '[';
+    value: '[';
+}
+
+export type CloseSquareBracket = {
+    type: ']';
+    value: ']';
+}
+
 export type SemicolonToken = {
     type: ';';
     value: ';';
@@ -199,6 +214,10 @@ export type Token =
     | SemicolonToken
     | OpenCurlyBraceToken
     | CloseCurlyBraceToken
+    | CommaToken
+    | DotToken
+    | OpenSquareBracket
+    | CloseSquareBracket
     | OperatorToken
     | LogicalOperator
     | UnaryOperatorToken
@@ -208,7 +227,6 @@ export type Token =
     | SimpleAssignToken
     | ComplexAssignToken
     | KeywordToken
-    | CommaToken
     ;
 
 
@@ -239,6 +257,9 @@ const Spec: [RegExp, TokenType?][] = [
   [/^\(/, '('],
   [/^\)/, ')'],
   [/^,/, ','],
+  [/^\./, '.'],
+  [/^\[/, '['],
+  [/^\]/, ']'],
 
   //-----------------------------
   // Keywords:
