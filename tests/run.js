@@ -21,6 +21,7 @@ const do_while_test_1 = __importDefault(require("./do-while-test"));
 const for_test_1 = __importDefault(require("./for-test"));
 const function_declaration_test_1 = __importDefault(require("./function-declaration-test"));
 const member_test_1 = __importDefault(require("./member-test"));
+const call_test_1 = __importDefault(require("./call-test"));
 const tests = [
     literals_test_1.default,
     statement_list_test_1.default,
@@ -38,6 +39,7 @@ const tests = [
     for_test_1.default,
     function_declaration_test_1.default,
     member_test_1.default,
+    call_test_1.default,
 ];
 const parser = new Parser_1.Parser();
 /**
@@ -46,9 +48,7 @@ const parser = new Parser_1.Parser();
 function exec() {
     ``;
     const program = `
-    while(i < s.length) {
-        s[i];
-    }
+        square(2);
     `;
     const ast = parser.parse(program);
     console.log(JSON.stringify(ast, null, 2));

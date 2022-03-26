@@ -38,8 +38,9 @@ class Parser {
      * ;
      */
     StatementList(stopLookaheadType) {
+        var _a;
         const statementList = [this.Statement()];
-        while (this.lookahead && this.lookahead.type !== stopLookaheadType) {
+        while (((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) !== stopLookaheadType) {
             statementList.push(this.Statement());
         }
         return statementList;
@@ -374,11 +375,77 @@ class Parser {
     }
     /**
      * LeftHandSideExpression
-     * : MemberExpression
+     * : CallMemberExpression
      * ;
      */
     LeftHandSideExpression() {
-        return this.MemberExpression();
+        return this.CallMemberExpression();
+    }
+    /**
+     * CallMemberExpression
+     * : MemberExpression
+     * | CallExpression
+     * ;
+     */
+    CallMemberExpression() {
+        var _a;
+        const member = this.MemberExpression();
+        // See if we have a call expression
+        if (((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) === '(') {
+            return this.CallExpression(member);
+        }
+        // Simple member expression
+        return member;
+    }
+    /**
+     * Generic call expression helper.
+     *
+     * CallExpression
+     * : Callee Arguments
+     * ;
+     *
+     * Callee
+     * : MemberExpression
+     * | CallExpression
+     * ;
+     */
+    CallExpression(callee) {
+        var _a;
+        let callExpression = {
+            type: 'CallExpression',
+            callee,
+            arguments: this.Arguments(),
+        };
+        if (((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) === '(') {
+            callExpression = this.CallExpression(callExpression);
+        }
+        return callExpression;
+    }
+    /**
+     * Arguments
+     * : '(' OptArgumentList ')'
+     * ;
+     */
+    Arguments() {
+        var _a;
+        this.eat('(');
+        const argumentList = ((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) !== ')' ? this.ArgumentList() : [];
+        this.eat(')');
+        return argumentList;
+    }
+    /**
+     * ArgumentList
+     * : AssignmentExpression
+     * | ArgumentList ',' AssignmentExpression
+     * ;
+     */
+    ArgumentList() {
+        var _a;
+        const argumentList = [];
+        do {
+            argumentList.push(this.AssignmentExpression());
+        } while (((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) === ',' && this.eat(','));
+        return argumentList;
     }
     /**
      * MemberExpression

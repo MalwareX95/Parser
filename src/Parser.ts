@@ -5,6 +5,7 @@ type Statement = ReturnTypeOfParserKey<'Statement'>
 type StatementList = Statement[];
 type AssignmentExpressionList = AssignmentExpression[];
 type Expression = ReturnTypeOfParserKey<'Expression'>
+type Arguments = ReturnTypeOfParserKey<'Arguments'>
 
 export type Program = {
     type: 'Program';
@@ -119,6 +120,12 @@ type MemberExpression =
     property: Expression
 }
 
+type CallExpression = {
+    type: 'CallExpression';
+    callee: AssignmentExpression;
+    arguments: Arguments;
+}
+
 type LogicalExpression = 
 {
     type: 'LogicalExpression',
@@ -141,6 +148,7 @@ type AssignmentExpression =
 | UnaryExpression
 | BinaryExpression
 | MemberExpression
+| CallExpression
 | {
     type: 'AssignmentExpression';
     operator: PropType<AssignToken, 'value'>;
@@ -198,7 +206,7 @@ export class Parser {
     StatementList(stopLookaheadType?: TokenType): StatementList {
         const statementList = [ this.Statement() ]
         
-        while(this.lookahead && this.lookahead.type !== stopLookaheadType) {
+        while(this.lookahead?.type !== stopLookaheadType) {
             statementList.push(this.Statement())
         }
 
@@ -585,11 +593,86 @@ export class Parser {
 
     /**
      * LeftHandSideExpression
-     * : MemberExpression
+     * : CallMemberExpression
      * ;
      */
     LeftHandSideExpression() {
-        return this.MemberExpression();
+        return this.CallMemberExpression();
+    }
+
+    /**
+     * CallMemberExpression
+     * : MemberExpression
+     * | CallExpression
+     * ;
+     */
+    CallMemberExpression() {
+        const member = this.MemberExpression();
+
+        // See if we have a call expression
+        if (this.lookahead?.type === '(') {
+            return this.CallExpression(member);
+        }
+
+        // Simple member expression
+        return member;
+    }
+
+    /**
+     * Generic call expression helper.
+     * 
+     * CallExpression 
+     * : Callee Arguments
+     * ;
+     * 
+     * Callee
+     * : MemberExpression
+     * | CallExpression
+     * ;
+     */
+    CallExpression(callee : AssignmentExpression) {
+        let callExpression: CallExpression = {
+            type: 'CallExpression',
+            callee,
+            arguments: this.Arguments(),            
+        }
+
+        if (this.lookahead?.type === '(') {
+            callExpression = this.CallExpression(callExpression);
+        }
+
+        return callExpression;
+    }
+
+    /**
+     * Arguments
+     * : '(' OptArgumentList ')'
+     * ;
+     */
+    Arguments() {
+        this.eat('(');
+
+        const argumentList = this.lookahead?.type !== ')' ? this.ArgumentList() : [];
+
+        this.eat(')');
+
+        return argumentList;
+    }
+
+    /**
+     * ArgumentList
+     * : AssignmentExpression
+     * | ArgumentList ',' AssignmentExpression
+     * ;
+     */
+    ArgumentList() {
+        const argumentList: AssignmentExpression[] = [];
+        
+        do {
+            argumentList.push(this.AssignmentExpression());
+        } while(this.lookahead?.type === ',' && this.eat(','));
+
+        return argumentList;
     }
 
     /**

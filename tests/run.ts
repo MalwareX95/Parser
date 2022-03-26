@@ -16,6 +16,7 @@ import doWhileTest from "./do-while-test";
 import forTest from "./for-test";
 import functionDeclarationTest from "./function-declaration-test";
 import memberTest from "./member-test";
+import callTest from "./call-test";
 
 const tests = [
     literalTests,
@@ -34,6 +35,7 @@ const tests = [
     forTest,
     functionDeclarationTest,
     memberTest,
+    callTest,
 ];
 
 const parser = new Parser();
@@ -43,9 +45,7 @@ const parser = new Parser();
  */
 function exec() {``
     const program = `
-    while(i < s.length) {
-        s[i];
-    }
+        square(2);
     `;
 
     const ast = parser.parse(program);
