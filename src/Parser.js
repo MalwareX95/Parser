@@ -282,6 +282,33 @@ class Parser {
         };
     }
     /**
+     * ClassDeclaration
+     * : 'class' Identifier OptClassExtends BlockStatement
+     * ;
+     */
+    ClassDeclaration() {
+        var _a;
+        this.eat('class');
+        const id = this.Identifier();
+        const superClass = ((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) === 'extends' ? this.ClassExtends() : null;
+        const body = this.BlockStatement();
+        return {
+            type: 'ClassDeclaration',
+            id,
+            superClass,
+            body,
+        };
+    }
+    /**
+     * ClassExtends
+     * : 'extends' Identifier
+     * ;
+     */
+    ClassExtends() {
+        this.eat('extends');
+        return this.Identifier();
+    }
+    /**
      * Statement
      * : ExpressionStatement
      * | BlockStatement
@@ -306,6 +333,8 @@ class Parser {
                 return this.VariableStatement();
             case 'def':
                 return this.FunctionDeclaration();
+            case 'class':
+                return this.ClassDeclaration();
             case 'return':
                 return this.ReturnStatement();
             case 'while':
@@ -388,10 +417,14 @@ class Parser {
      * ;
      */
     CallMemberExpression() {
-        var _a;
+        var _a, _b;
+        // super call
+        if (((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) === 'super') {
+            return this.CallExpression(this.Super());
+        }
         const member = this.MemberExpression();
         // See if we have a call expression
-        if (((_a = this.lookahead) === null || _a === void 0 ? void 0 : _a.type) === '(') {
+        if (((_b = this.lookahead) === null || _b === void 0 ? void 0 : _b.type) === '(') {
             return this.CallExpression(member);
         }
         // Simple member expression
@@ -626,6 +659,8 @@ class Parser {
      * : Literal
      * | ParenthesizedExpression
      * | Identifier
+     * | ThisExpression
+     * | NewExpression
      * ;
      */
     PrimaryExpression() {
@@ -636,9 +671,48 @@ class Parser {
         switch ((_b = this.lookahead) === null || _b === void 0 ? void 0 : _b.type) {
             case '(':
                 return this.ParenthesizedExpression();
+            case 'this':
+                return this.ThisExpression();
+            case 'new':
+                return this.NewExpression();
             default:
                 return this.Identifier();
         }
+    }
+    /**
+     * NewExpression
+     * : 'new' MemberExpression Arguments
+     * ;
+     */
+    NewExpression() {
+        this.eat('new');
+        return {
+            type: 'NewExpression',
+            callee: this.MemberExpression(),
+            arguments: this.Arguments(),
+        };
+    }
+    /**
+     * ThisExpression
+     * : 'this'
+     * ;
+     */
+    ThisExpression() {
+        this.eat('this');
+        return {
+            type: 'ThisExpression',
+        };
+    }
+    /**
+     * Super
+     * : 'super'
+     * ;
+     */
+    Super() {
+        this.eat('super');
+        return {
+            type: 'Super',
+        };
     }
     /**
      * UnaryExpression

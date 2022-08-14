@@ -51,6 +51,27 @@ type NullLiteral = {
     value: null;
 }
 
+type ThisExpression = {
+    type: 'ThisExpression';
+}
+
+type SuperExpression = {
+    type: 'Super';
+}
+
+type NewExpression = {
+    type: 'NewExpression';
+    callee: AssignmentExpression;
+    arguments: Arguments;
+}
+
+type ClassDeclaration = {
+    type: 'ClassDeclaration';
+    id: Identifier;
+    superClass: Identifier | null;
+    body: BlockStatement;
+}
+
 type VariableDeclaration = {
     type: 'VariableDeclaration';
     id: Identifier;
@@ -149,6 +170,9 @@ type AssignmentExpression =
 | BinaryExpression
 | MemberExpression
 | CallExpression
+| ThisExpression
+| NewExpression
+| SuperExpression
 | {
     type: 'AssignmentExpression';
     operator: PropType<AssignToken, 'value'>;
@@ -493,6 +517,37 @@ export class Parser {
     }
 
     /**
+     * ClassDeclaration
+     * : 'class' Identifier OptClassExtends BlockStatement
+     * ;
+     */
+    ClassDeclaration(): ClassDeclaration {
+        this.eat('class');
+
+        const id = this.Identifier();
+        const superClass = this.lookahead?.type === 'extends' ? this.ClassExtends() : null;
+
+        const body = this.BlockStatement();
+
+        return {
+            type: 'ClassDeclaration',
+            id,
+            superClass,
+            body,
+        }
+    }
+
+    /**
+     * ClassExtends
+     * : 'extends' Identifier
+     * ;
+     */
+    ClassExtends() {
+        this.eat('extends');
+        return this.Identifier();
+    }
+
+    /**
      * Statement
      * : ExpressionStatement
      * | BlockStatement
@@ -516,6 +571,8 @@ export class Parser {
                 return this.VariableStatement();
             case 'def':
                 return this.FunctionDeclaration();
+            case 'class':
+                return this.ClassDeclaration();
             case 'return':
                 return this.ReturnStatement();
             case 'while':
@@ -607,6 +664,10 @@ export class Parser {
      * ;
      */
     CallMemberExpression() {
+        // super call
+        if (this.lookahead?.type === 'super') {
+            return this.CallExpression(this.Super());
+        }
         const member = this.MemberExpression();
 
         // See if we have a call expression
@@ -876,6 +937,8 @@ export class Parser {
      * : Literal
      * | ParenthesizedExpression
      * | Identifier
+     * | ThisExpression
+     * | NewExpression
      * ;
      */
     PrimaryExpression() {
@@ -886,10 +949,53 @@ export class Parser {
         switch(this.lookahead?.type) {
             case '(':
                 return this.ParenthesizedExpression();                 
+            case 'this': 
+                return this.ThisExpression();
+            case 'new':
+                return this.NewExpression();
             default:
                 return this.Identifier();
         }
     }
+
+    /**
+     * NewExpression
+     * : 'new' MemberExpression Arguments
+     * ;
+     */
+    NewExpression(): NewExpression {
+        this.eat('new');
+        return {
+            type: 'NewExpression',
+            callee: this.MemberExpression(),
+            arguments: this.Arguments(),
+        }   
+    }
+
+    /**
+     * ThisExpression
+     * : 'this'
+     * ;
+     */
+    ThisExpression(): ThisExpression {
+        this.eat('this');
+        return {
+            type: 'ThisExpression',
+        };
+    }
+
+
+    /**
+     * Super
+     * : 'super'
+     * ;
+     */
+    Super(): SuperExpression {
+        this.eat('super');
+        return {
+            type: 'Super',
+        };
+    }    
 
     /**
      * UnaryExpression

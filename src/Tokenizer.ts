@@ -65,6 +65,31 @@ export type ReturnKeywordToken = {
     value: 'return;'
 }
 
+export type ClassKeywordToken = {
+    type: 'class';
+    value: 'class';
+}
+
+export type ExtendsKeywordToken = {
+    type: 'extends';
+    value: 'extends';
+}
+
+export type SuperKeywordToken = {
+    type: 'super';
+    value: 'super';
+}
+
+export type NewKeywordToken = {
+    type: 'new';
+    value: 'new';
+}
+
+export type ThisKeywordToken = {
+    type: 'this';
+    value: 'this';
+}
+
 export type KeywordToken =
     | LetKeywordToken
     | IfKeywordToken
@@ -77,6 +102,11 @@ export type KeywordToken =
     | ForKeywordToken
     | DefKeywordToken
     | ReturnKeywordToken
+    | ClassKeywordToken
+    | ExtendsKeywordToken
+    | SuperKeywordToken
+    | NewKeywordToken
+    | ThisKeywordToken
 
 export type CommaToken = {
     type: ',';
@@ -196,9 +226,7 @@ export type OnlyFunctionKeys<T> = {
 
 export type ReturnTypeOfKey<T, K extends keyof T & OnlyFunctionKeys<T>> = T[K] extends (...args: any) => infer R ? R : never;
 export type FunctionType<T, K extends keyof T & OnlyFunctionKeys<T>> = T[K] extends () => infer R ? () => R : never;
-
 export type ReturnTypeOfParserKey<K extends keyof Parser & OnlyFunctionKeys<Parser>> = ReturnTypeOfKey<Parser, K>
-
 
 export type PropType<T, K extends keyof T> = T[K];
 
@@ -274,6 +302,11 @@ const Spec: [RegExp, TokenType?][] = [
   [/^\bfor\b/, 'for'],
   [/^\bdef\b/, 'def'],
   [/^\breturn\b/, 'return'],
+  [/^\bclass\b/, 'class'],
+  [/^\bextends\b/, 'extends'],
+  [/^\bsuper\b/, 'super'],
+  [/^\bnew\b/, 'new'],
+  [/^\bthis\b/, 'this'],
   //-----------------------------
   // Numbers: 
   [ /^\d+/, 'Number'],
